@@ -1,5 +1,7 @@
 # Demo
 
+Supporting note. The locked spec is [SPEC.md](SPEC.md).
+
 Stripe is the deepest category bet. Everything else on stage supports that one live payment.
 
 ## Live path

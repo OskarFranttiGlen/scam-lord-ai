@@ -1,5 +1,7 @@
 # Safeguards
 
+Supporting note. The locked spec is [SPEC.md](SPEC.md).
+
 Four safeguards ship with the pitch: upfront AI disclosure, landlord-set policy limits, hardship detection with a human handoff, and dispute handling. Distress is a third decision on the same path as hardship and dispute.
 
 ## 1. Upfront AI disclosure

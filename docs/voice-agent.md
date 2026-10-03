@@ -1,5 +1,7 @@
 # Voice agent
 
+Supporting note. The locked spec is [SPEC.md](SPEC.md).
+
 The voice path is a LiveKit pipeline. Deepgram transcribes, ElevenLabs speaks, Silero handles voice activity. Each turn goes to a Vercel `ToolLoopAgent` running Claude. That agent loads the tenancy from Supabase and calls the tools below. Jev is the low-latency decision model beside that loop: each turn is judged against constraints defined before the call. Numeric policy still runs in code. A `WorkflowAgent` confirms payment and holds a handoff. See [Property system](pms.md).
 
 ## Persona
