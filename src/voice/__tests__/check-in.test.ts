@@ -1,0 +1,179 @@
+import { describe, expect, it } from "vitest";
+
+import { createInitialCallState, normalizeCallState, type CallContext } from "../context";
+import { getDemoCallContext } from "../demo-context";
+import { buildHandoffInstructions, buildNegotiationInstructions } from "../instructions";
+import { buildCallbackGreeting, buildOpeningGreeting } from "../livekit-agent";
+import { getCollectionTools } from "../tools";
+
+const TOOL_OPTIONS = { toolCallId: "call_1", messages: [], context: {} };
+const TODAY_PLAN = { installments: [{ date: new Date().toISOString().slice(0, 10), amount: 1840 }] };
+
+function context(overrides: Partial<CallContext> = {}): CallContext {
+    return { ...getDemoCallContext(), maintenanceRequests: [], ...overrides };
+}
+
+const OPEN_TAP: NonNullable<CallContext["maintenanceRequests"]>[number] = {
+    description: "Kitchen tap dripping",
+    status: "open",
+    urgency: "routine",
+    reportedAt: "2026-09-21T10:00:00.000Z",
+    resolvedAt: null,
+};
+
+describe("check-in gate", () => {
+    it("refuses check_policy until the tenant's feedback is recorded", async () => {
+        const state = createInitialCallState();
+        const tools = getCollectionTools(context(), state);
+
+        const result = await tools.check_policy.execute?.(TODAY_PLAN, TOOL_OPTIONS);
+
+        expect(result).toMatchObject({ status: "check_in_first" });
+    });
+
+    it("refuses accept_plan until the tenant's feedback is recorded, and saves nothing", async () => {
+        const state = createInitialCallState();
+        const tools = getCollectionTools(context(), state);
+
+        const result = await tools.accept_plan.execute?.(TODAY_PLAN, TOOL_OPTIONS);
+
+        expect(result).toMatchObject({ status: "check_in_first" });
+        expect(state.acceptedPlan).toBeUndefined();
+        expect(state.paymentLinkSent).toBe(false);
+    });
+
+    it("opens the policy tools once record_feedback runs", async () => {
+        const state = createInitialCallState();
+        const tools = getCollectionTools(context(), state);
+
+        await tools.record_feedback.execute?.(
+            { summary: "All good, tap still drips", declined: false, issues: [] },
+            TOOL_OPTIONS,
+        );
+        const result = await tools.check_policy.execute?.(TODAY_PLAN, TOOL_OPTIONS);
+
+        expect(state.feedbackRecorded).toBe(true);
+        expect(state.tenantFeedback).toBe("All good, tap still drips");
+        expect(result).toMatchObject({ status: "accepted" });
+    });
+
+    it("records a decline as the feedback and still opens the gate", async () => {
+        const state = createInitialCallState();
+        const tools = getCollectionTools(context(), state);
+
+        await tools.record_feedback.execute?.({ summary: "", declined: true, issues: [] }, TOOL_OPTIONS);
+
+        expect(state.feedbackRecorded).toBe(true);
+        expect(state.tenantFeedback).toBe("declined");
+    });
+
+    it("logs routine repairs without a handoff", async () => {
+        const state = createInitialCallState();
+        const tools = getCollectionTools(context(), state);
+
+        await tools.record_feedback.execute?.(
+            { summary: "Bathroom fan is noisy", declined: false, issues: [{ description: "Bathroom fan noisy", urgent: false }] },
+            TOOL_OPTIONS,
+        );
+
+        expect(state.maintenanceReports).toEqual([
+            expect.objectContaining({ description: "Bathroom fan noisy", urgent: false }),
+        ]);
+        expect(state.maintenanceReports[0].id).toMatch(/^[0-9a-f-]{36}$/);
+        expect(state.handoffActive).toBe(false);
+        expect(state.urgentMaintenance).toBe(false);
+    });
+
+    it("hands off on an urgent repair and blocks collection for the rest of the conversation", async () => {
+        const state = createInitialCallState();
+        const tools = getCollectionTools(context(), state);
+
+        await tools.record_feedback.execute?.(
+            { summary: "Ceiling leaking", declined: false, issues: [{ description: "Water leaking through bedroom ceiling", urgent: true }] },
+            TOOL_OPTIONS,
+        );
+        const accept = await tools.accept_plan.execute?.(TODAY_PLAN, TOOL_OPTIONS);
+
+        expect(state.handoffActive).toBe(true);
+        expect(state.urgentMaintenance).toBe(true);
+        expect(accept).toMatchObject({ status: "handoff" });
+        expect(state.acceptedPlan).toBeUndefined();
+    });
+
+    it("keeps check-in fields when call state round-trips through JSON", () => {
+        const state = createInitialCallState();
+        state.feedbackRecorded = true;
+        state.tenantFeedback = "fine";
+        state.urgentMaintenance = true;
+        state.maintenanceReports = [{ id: "5f0c3a52-8a8e-4c8e-9a51-0b0f1c2d3e4f", description: "Leak", urgent: true }];
+
+        expect(normalizeCallState(JSON.parse(JSON.stringify(state)))).toMatchObject({
+            feedbackRecorded: true,
+            tenantFeedback: "fine",
+            urgentMaintenance: true,
+            maintenanceReports: state.maintenanceReports,
+        });
+    });
+});
+
+describe("check-in greetings", () => {
+    it("asks how the unit is going before any amount on an outbound call", () => {
+        const greeting = buildOpeningGreeting(context());
+
+        expect(greeting).toMatch(/AI assistant calling for Maple Court/);
+        expect(greeting).toMatch(/good time/i);
+        expect(greeting).toMatch(/how's everything going with the unit/i);
+        expect(greeting).not.toMatch(/dollar|balance|rent/i);
+    });
+
+    it("follows up on an open repair in the greeting", () => {
+        const greeting = buildOpeningGreeting(context({ maintenanceRequests: [OPEN_TAP] }));
+
+        expect(greeting).toMatch(/kitchen tap dripping/i);
+        expect(greeting).not.toMatch(/dollar|balance/i);
+    });
+
+    it("does not lead with the balance when a known tenant calls back", () => {
+        expect(buildCallbackGreeting(context(), { handoffActive: false })).not.toMatch(/balance/i);
+    });
+});
+
+describe("check-in instructions", () => {
+    it("requires the check-in before money while feedback is missing", () => {
+        const prompt = buildNegotiationInstructions(context(), true, "voice", { feedbackRecorded: false });
+
+        expect(prompt).toMatch(/CHECK-IN FIRST/);
+        expect(prompt).toMatch(/record_feedback/);
+    });
+
+    it("drops the check-in rule once feedback is recorded", () => {
+        const prompt = buildNegotiationInstructions(context(), true, "voice", { feedbackRecorded: true });
+
+        expect(prompt).not.toMatch(/CHECK-IN FIRST/);
+    });
+
+    it("lists past maintenance requests with their status", () => {
+        const prompt = buildNegotiationInstructions(
+            context({
+                maintenanceRequests: [
+                    OPEN_TAP,
+                    { ...OPEN_TAP, description: "Smoke alarm battery", status: "resolved", resolvedAt: "2026-09-01T00:00:00.000Z" },
+                ],
+            }),
+            true,
+            "text",
+            { feedbackRecorded: false },
+        );
+
+        expect(prompt).toMatch(/Kitchen tap dripping \(open/);
+        expect(prompt).toMatch(/Smoke alarm battery \(resolved/);
+    });
+
+    it("tells the handoff prompt about an urgent repair and to stay off what it cannot do", () => {
+        const prompt = buildHandoffInstructions(context(), true, ["urgent_maintenance"], "voice");
+
+        expect(prompt).toMatch(/urgent repair/i);
+        expect(prompt).toMatch(/today/);
+        expect(prompt).toMatch(/Never say what you cannot do/);
+    });
+});
