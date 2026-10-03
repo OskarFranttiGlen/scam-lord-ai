@@ -2,9 +2,9 @@
 
 /**
  * @module login-form
- * Login card: Apple/Google OAuth buttons, email/password form with validation. On submit shows
- * Turnstile then TurnstileSignIn; supports redirect path and forgot-password link.
- * Depends on: TurnstileSignIn, Supabase client, UI components, react-hook-form/yup.
+ * Login card: Apple/Google OAuth buttons, email/password form with validation.
+ * Supports redirect path and forgot-password link.
+ * Depends on: Supabase client, UI components, react-hook-form/yup.
  * Used by: auth login page.
  */
 import { cn } from '@/lib/utils'
@@ -21,10 +21,12 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Separator } from '../ui/separator'
-import { Provider } from '@supabase/supabase-js'
-import { TurnstileSignIn } from './TurnstileSignIn'
+import { AuthError, Provider } from '@supabase/supabase-js'
 import { DASHBOARD_PATH } from '@/lib/dashboard-url'
 import { buildAuthSignUpHrefFromNext, sanitizeSignInReturn } from '@/lib/sign-in-return'
+import { handleSignInViaEmail } from '@/components/artifact-builder/utils/authentication'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from 'react-hook-form'
@@ -34,23 +36,15 @@ type TLoginFormProps = React.ComponentPropsWithoutRef<'div'> & {
   redirectPath?: string;
 };
 
-/** Renders login card with OAuth, email/password form, and Turnstile-gated sign-in. */
+/** Renders login card with OAuth and email/password form. */
 export function LoginForm({ className, redirectPath = DASHBOARD_PATH, ...props }: TLoginFormProps) {
     const safeRedirectPath = sanitizeSignInReturn(redirectPath);
+    const router = useRouter();
 
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [googleIsLoading,setGoogleIsLoading] = useState(false);
     const [appleIsLoading, setAppleIsLoading] = useState(false);
-    const [turnstileOpen, setTurnstileOpen] = useState(false);
-
-    const handleIsLoading = (isLoading: boolean) => {
-        setIsLoading(isLoading);
-    }
-
-    const handleTurnstileOpen = (turnstileOpen: boolean) => {
-        setTurnstileOpen(turnstileOpen);
-    }
 
     const handleSocialLogin = async (e: React.FormEvent, provider: Provider) => {
         e.preventDefault()
@@ -107,18 +101,22 @@ export function LoginForm({ className, redirectPath = DASHBOARD_PATH, ...props }
     const { onChange: onEmailChange } = register("email");
     const { onChange: onPasswordChange } = register("password");
 
-    const handleLogin = () => {
-        handleIsLoading(true)
-        handleTurnstileOpen(true);
-    }
-
-    const handleTurnstileClose = () => {
-        handleTurnstileOpen(false);
-        handleIsLoading(false);
-    }
-
-    const handleSignInError = () => {
-        setValue('password', '');
+    const handleLogin = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const status = await handleSignInViaEmail(watchEmail, watchPassword);
+            if (status instanceof AuthError) {
+                setValue('password', '');
+                toast.error("Error signing in: " + status.message);
+                return;
+            }
+            if (status) {
+                router.push(safeRedirectPath);
+            }
+        } finally {
+            setIsLoading(false);
+        }
     }
 
   return (
@@ -206,15 +204,6 @@ export function LoginForm({ className, redirectPath = DASHBOARD_PATH, ...props }
               </Link>
             </div>
           </form>
-        { turnstileOpen &&
-            <TurnstileSignIn
-                email={ watch().email }
-                password={ watch().password }
-                handleTurnstileClose={ handleTurnstileClose }
-                onSignInError={ handleSignInError }
-                redirectPath={ safeRedirectPath }
-            />
-        }
         </CardContent>
       </Card>
     </div>
