@@ -4,13 +4,13 @@
  * @module AgentFloor
  * React Flow panel of agent chains. A click opens that agent (ADR 0002 / 02).
  * Depends on: agents, build-floor-graph, AgentView, @xyflow/react.
- * Used by: ProgramGrid.
+ * Used by: LandlordHome.
  */
 
 import { useState } from "react";
 import { Background, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { DEFAULT_AGENTS } from "@/lib/agent-floor/agents";
+import { DEFAULT_AGENTS, type IAgent } from "@/lib/agent-floor/agents";
 import { buildFloorGraph } from "./build-floor-graph";
 import { AgentView } from "./AgentView";
 import { FloorNav } from "./FloorNav";
@@ -22,9 +22,13 @@ import {
 } from "./StepNode";
 
 /** Floor of every working agent, or the agent view when one chain is open. */
-export function AgentFloor() {
+export function AgentFloor({
+    agents = DEFAULT_AGENTS,
+}: {
+    agents?: readonly IAgent[];
+}) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const selected = DEFAULT_AGENTS.find((agent) => agent.id === selectedId);
+    const selected = agents.find((agent) => agent.id === selectedId);
 
     if (selected) {
         return (
@@ -35,7 +39,7 @@ export function AgentFloor() {
         );
     }
 
-    const { nodes, edges } = buildFloorGraph(DEFAULT_AGENTS);
+    const { nodes, edges } = buildFloorGraph(agents);
 
     return (
         <div className="h-full w-full">

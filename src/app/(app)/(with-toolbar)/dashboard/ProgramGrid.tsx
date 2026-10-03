@@ -2,13 +2,13 @@
 
 /**
  * @module ProgramGrid
- * The panel opposite the sidebar chat. Renders the agent floor (ADR 0002 / 02).
- * Depends on: AgentFloor.
+ * The panel opposite the sidebar chat. Landlord home tabs.
+ * Depends on: LandlordHome.
  * Used by: ProgramEditor.
  */
 
 import { memo } from "react";
-import { AgentFloor } from "@/components/agent-floor/AgentFloor";
+import { LandlordHome } from "@/components/landlord-home/LandlordHome";
 
 export interface IProps {
     document: TChatArtifactDocument;
@@ -21,7 +21,7 @@ function ProgramGridInner({ document, isMobile }: IProps) {
 
     return (
         <div className="h-full min-h-0 flex-1">
-            <AgentFloor />
+            <LandlordHome />
         </div>
     );
 }
