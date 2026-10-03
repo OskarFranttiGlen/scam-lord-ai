@@ -15,17 +15,13 @@
  * `--to` falls back to `DEMO_TENANT_PHONE`. `--demo` selects the demo tenancy, which is
  * currently the only context source and therefore the default. Reads `.env` from the cwd.
  *
- * Depends on: dotenv, @/payments/demo-invoice, @/payments/stripe, @/voice/outbound-call, @/voice/demo-context
+ * Depends on: dotenv, @/voice/demo-call
  * Used by: manual demo / smoke testing
  */
 
 import "dotenv/config";
 
-import { ensureOpenDemoInvoice } from "../src/payments/demo-invoice";
-import { getStripeClient } from "../src/payments/stripe";
-import type { CallContext } from "../src/voice/context";
-import { getDemoCallContext } from "../src/voice/demo-context";
-import { startCollectionCall } from "../src/voice/outbound-call";
+import { placeDemoCall } from "../src/voice/demo-call";
 
 const USAGE = "Usage: npx tsx scripts/call-tenant.ts --to +15555550102 [--demo]";
 
@@ -58,40 +54,6 @@ function parseArgs(argv: string[]): { to?: string; demo: boolean } {
 }
 
 /**
- * Swaps in a payable demo invoice when Stripe test mode is configured. Never blocks the dial:
- * a Stripe failure logs a warning and the stored context goes out unchanged.
- *
- * @param callContext - Demo tenancy the call is about
- */
-async function ensureDemoInvoice(callContext: CallContext): Promise<CallContext> {
-    if (!process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) {
-        return callContext;
-    }
-    const stripe = getStripeClient();
-    if (!stripe) {
-        return callContext;
-    }
-    try {
-        const { invoiceId, created } = await ensureOpenDemoInvoice({
-            stripe,
-            demo: callContext,
-            invoiceId: process.env.DEMO_STRIPE_INVOICE_ID,
-        });
-        if (created) {
-            console.log(
-                `[call-tenant] previous demo invoice is spent; seeded ${invoiceId}. `
-                + `Update .env (DEMO_STRIPE_INVOICE_ID=${invoiceId}) so the worker sees it too.`,
-            );
-        }
-        return { ...callContext, stripeInvoiceId: invoiceId };
-    } catch (error) {
-        const reason = error instanceof Error ? error.message : String(error);
-        console.warn(`[call-tenant] could not refresh the demo invoice (${reason}); dialing with the stored id.`);
-        return callContext;
-    }
-}
-
-/**
  * Places the call and prints the room name.
  */
 async function main(): Promise<void> {
@@ -102,13 +64,11 @@ async function main(): Promise<void> {
         process.exit(1);
     }
 
-    const callContext = await ensureDemoInvoice(getDemoCallContext());
+    const { roomName, callContext } = await placeDemoCall({ toPhoneNumber });
     console.log(
-        `[call-tenant] dialing ${toPhoneNumber} as ${callContext.propertyName} about `
-        + `${callContext.tenantName}'s $${callContext.openBalance} balance…`,
+        `[call-tenant] ringing ${toPhoneNumber} as ${callContext.propertyName} about `
+        + `${callContext.tenantName}'s $${callContext.openBalance} balance. room: ${roomName}`,
     );
-    const { roomName } = await startCollectionCall({ toPhoneNumber, callContext });
-    console.log(`[call-tenant] ringing. room: ${roomName}`);
     console.log("[call-tenant] watch the voice worker logs for the conversation.");
 }
 

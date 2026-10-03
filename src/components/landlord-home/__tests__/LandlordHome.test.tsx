@@ -51,6 +51,7 @@ describe("LandlordHome nav", () => {
             expect(slot.textContent).toContain("Home");
             expect(slot.textContent).toContain("Live calls");
         });
+        expect(slot.textContent).toContain("Call now");
         expect(slot.textContent).not.toContain("Settings");
         expect(slot.textContent).not.toContain("Billing");
     });

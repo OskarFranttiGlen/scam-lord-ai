@@ -3,9 +3,9 @@
 /**
  * @module LandlordHome
  * Right-panel tabs. Home and Live calls are outlets; Settings and Billing are empty.
- * On sm+, Home and Live calls portal into #toolbar-nav-portal. Settings and Billing
- * are opened from the sidebar.
- * Depends on: tabs, AgentFloor, home panels, dashboard-panel.
+ * On sm+, Home and Live calls (with the Call now action) portal into #toolbar-nav-portal.
+ * Settings and Billing are opened from the sidebar.
+ * Depends on: tabs, AgentFloor, CallNowButton, home panels, dashboard-panel.
  * Used by: ProgramGrid.
  */
 
@@ -13,6 +13,7 @@ import { useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { AgentFloor } from "@/components/agent-floor/AgentFloor";
 import { ActivityFeed } from "@/components/landlord-home/ActivityFeed";
+import { CallNowButton } from "@/components/landlord-home/CallNowButton";
 import { Funnel } from "@/components/landlord-home/Funnel";
 import { MetricsBand } from "@/components/landlord-home/MetricsBand";
 import { NeedsYou } from "@/components/landlord-home/NeedsYou";
@@ -21,13 +22,17 @@ import { useCalls } from "@/lib/landlord-home/use-calls";
 import { useHomeMetrics } from "@/lib/landlord-home/use-home-metrics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getDashboardPanel, setDashboardPanel, subscribeDashboardPanel } from "@/lib/dashboard-panel";
+import { cn } from "@/lib/utils";
 
 function HomeNav({ className }: { className?: string }) {
     return (
-        <TabsList className={ className }>
-            <TabsTrigger value="home">Home</TabsTrigger>
-            <TabsTrigger value="live">Live calls</TabsTrigger>
-        </TabsList>
+        <div className={ cn("flex items-center gap-2", className) }>
+            <TabsList>
+                <TabsTrigger value="home">Home</TabsTrigger>
+                <TabsTrigger value="live">Live calls</TabsTrigger>
+            </TabsList>
+            <CallNowButton />
+        </div>
     );
 }
 
