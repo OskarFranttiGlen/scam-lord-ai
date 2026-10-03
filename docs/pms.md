@@ -32,7 +32,7 @@ All of these live in Supabase Postgres. Row level security is on. The landlord�
 | `tenancies` | Tenant name, phone, email, language, `unit_id`, Stripe customer id, external PMS id | PMS sync. Demo: seeded |
 | `policies` | `max_installments`, `grace_days`, `fee_waiver_cap`, one row per landlord | Landlord settings screen |
 | `perks` | A landlord-written sweetener and when it applies. Example: “We’ll mow the lawn this weekend” if they pay the open balance today | Landlord |
-| `calls` | Tenancy, Stripe invoice id, status, transcript, Jev probabilities, handoff reason | Voice agent, started by a Stripe event |
+| `calls` | Tenancy, Stripe invoice id, status, transcript, each Jev check (window, criteria, probabilities, outcome), handoff reason | Voice agent, started by a Stripe event |
 | `plans` | Installments, dates, amounts, waiver, chosen `perk_id`, Stripe Subscription Schedule id, `call_id` | Policy code, then the Stripe toolkit |
 
 Photos go in a private Storage bucket. The row on `calls` keeps the object path and the Gemini summary.

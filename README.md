@@ -44,7 +44,7 @@ Payout ──► landlord’s Stripe connected account
 | Stripe (deepest) | An overdue invoice starts the call on its own. The agent negotiates inside Stripe, sends the link by text and email, the judge pays, and the agent confirms it live. |
 | Claude | The negotiation brain, working inside policy guardrails. |
 | Gemini | Reads photos tenants send, such as a hardship letter or a repair issue. |
-| Vercel | Hosts the dashboard and runs the agents: `ToolLoopAgent` on the call, `WorkflowAgent` for payment and handoff. Jev runs through AI Gateway. |
+| Vercel | Hosts the dashboard and runs the agents: `ToolLoopAgent` on the call, `WorkflowAgent` for payment and handoff. The agent floor shows live run status and a React Flow graph of the current step, with the Jev trace for each decision. Jev runs through AI Gateway. |
 | Codex | Used visibly during the build. |
 | UX | A landlord logs in and sees their portfolio and settings. |
 | Backup | A recorded demo if the live call fails. |
@@ -56,5 +56,5 @@ Payout ──► landlord’s Stripe connected account
 - [Architecture](docs/architecture.md) — who decides what on a call
 - [Safeguards](docs/safeguards.md) — code policy, Jev decisions, human handoff, Gemini
 - [Voice agent](docs/voice-agent.md) — disclosure, prompt, tools, Stripe on the call
-- [Dashboard](docs/dashboard.md) — landlord login, AppFolio connection, portfolio, settings, calls, billing
+- [Dashboard](docs/dashboard.md) — landlord login, AppFolio connection, portfolio, settings, calls, billing, and the agent floor
 - [Demo](docs/demo.md) — live Stripe path and the recorded backup

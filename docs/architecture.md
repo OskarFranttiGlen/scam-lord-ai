@@ -13,7 +13,7 @@ Stripe is the money system. An overdue or failed invoice starts the call, across
 | Stripe | System of record for invoices, Subscription Schedules, credit notes, and payouts. Events start the call. The agent reads and writes Stripe during the call. The link goes out by Twilio and Resend. |
 | LiveKit | Audio in and out. Deepgram transcribes. ElevenLabs speaks. Forwards each turn to the `ToolLoopAgent` and speaks the reply. |
 | Vercel `WorkflowAgent` | Starts a call when a Stripe invoice fails or is overdue, on any property. Also waits for payment confirmation and for a person to take a handoff. |
-| Vercel | Dashboard, both agents, and the AI Gateway path for Claude, Jev, and Gemini. |
+| Vercel | Landlord dashboard, the agent floor, both agents, and the AI Gateway path for Claude, Jev, and Gemini. |
 | Supabase | The property records the agents read and write. |
 
 ## Call sequence
@@ -32,6 +32,10 @@ Stripe is the money system. An overdue or failed invoice starts the call, across
 Claude does not invent fee waivers, extra installments, or dates outside the grace window. Those bounds are exact, so code enforces them. Jev does not replace that arithmetic. It makes the judgment calls we can specify in advance, and it is tuned to over-flag because a missed hardship, dispute, or distress matters more than an extra handoff.
 
 If wiring Jev through AI Gateway slips during the build, Claude answers the same three questions through a strict schema. Policy code does not move. The fallback is a build contingency, not a second policy engine.
+
+## Agent floor
+
+The same Vercel app has a page for the runs themselves, separate from the landlord screens. It shows which `ToolLoopAgent` and `WorkflowAgent` runs are in progress, and a [React Flow](https://reactflow.dev/) graph of the step each one is on. The trace under a run is the Jev request and the typed decision, so a bad flag or a missed one points at the constraint text we would change. Details are in [Dashboard](dashboard.md).
 
 ## Ledger
 

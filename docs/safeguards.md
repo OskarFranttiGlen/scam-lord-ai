@@ -88,6 +88,8 @@ Start the flag line at **0.35**. Any question at or above 0.35 blocks new conces
 
 A flagged dispute still gets a calm acknowledgement of what the tenant raised. The agent does not argue the ledger.
 
+Every check is stored, not only the ones that flag. The row keeps the transcript window, the photo summary if there was one, the question text and criteria, the three probabilities, and the code outcome (`continue` or `handoff`). The agent floor reads that row. When a check looks wrong, we edit the criterion or the 0.35 constant. The next call uses the new text.
+
 ### Claude fallback
 
 If the Gateway key, model access, or latency is not ready in time, the same three questions go to Claude with a strict JSON schema. The 0.35 rule and the handoff behavior stay in code. Policy limits stay in code either way.
@@ -106,6 +108,6 @@ Gemini does not set payment terms.
 Handoff is a call state, not a vibe.
 
 - Reason: `hardship`, `dispute`, or `distressed` (one or more).
-- The probabilities and the transcript window that triggered them are stored.
+- The check that flagged is the same stored trace as any other turn: transcript window, criteria, probabilities, and outcome.
 - Claude’s next turn is short, respectful, and ends negotiation.
 - The dashboard shows the call as waiting for a person.

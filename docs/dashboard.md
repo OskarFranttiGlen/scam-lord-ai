@@ -24,4 +24,14 @@ Five screens. That is the whole app.
 
 ## What the landlord cannot do here
 
-They do not edit the ledger. The balance is the Stripe invoice. They do not start the call by hand. An overdue invoice does that. They do not see another landlord’s rows.
+They do not edit the ledger. The balance is the Stripe invoice. They do not start the call by hand. An overdue invoice does that. They do not see another landlord’s rows. They do not see the agent floor.
+
+## Agent floor
+
+Same Vercel app, not one of the five landlord screens. No landlord login. This page is how we watch the agents that are working, and how we review a Jev decision after the call.
+
+It lists each live run. A `ToolLoopAgent` is on a call. A `WorkflowAgent` is starting a call, waiting on a Stripe payment, or holding a handoff. Status is in progress, waiting on payment, or waiting on a person. The row names the tenant, the property, and the step that run is on.
+
+The main view is a node graph, built with [React Flow](https://reactflow.dev/). Nodes are the steps of a call: the Stripe invoice, the workflow start, disclosure, the Jev check, policy, the Stripe plan, the payment link, and then either paid or handoff. Each working agent sits on the node for its current step.
+
+Opening a run shows its trace. Every Jev check keeps the transcript window, any photo summary, the three questions with the criteria that were sent, each probability, and what code did with the 0.35 line. A continue is stored the same way as a flag. When a decision looks wrong, that record is what we read, then we change the criterion text or the line. The next call uses the new text. See [Safeguards](safeguards.md).

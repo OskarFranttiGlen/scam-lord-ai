@@ -28,7 +28,7 @@ Record the same eight steps before the demo, including the SMS, the Stripe succe
 | Stripe | The call starts from a failed or overdue invoice. The plan is written in Stripe. Link on the judge’s phone, payment, spoken confirmation. |
 | Claude | Negotiation that changes when the judge asks for terms the settings forbid. |
 | Gemini | One photo read into the call, if the optional branch is used. |
-| Vercel | Dashboard live on a deployed URL. The call runs through the Vercel agent. Jev calls show in AI Gateway usage if a judge asks. |
+| Vercel | Dashboard live on a deployed URL. The agent floor shows who is working, the step they are on, and the Jev trace. The call runs through the Vercel agent. Jev calls show in AI Gateway usage if a judge asks. |
 | UX | The settings screen, used, not a slide. |
 | Codex | Build history from the session, ready to show if asked. Codex is not a runtime feature. |
 
