@@ -71,6 +71,7 @@ describe("POST /api/stripe/webhook", () => {
     beforeEach(() => {
         vi.stubEnv("STRIPE_WEBHOOK_SECRET", SECRET);
         vi.spyOn(console, "info").mockImplementation(() => undefined);
+        vi.spyOn(stripe.invoices, "list").mockImplementation(() => Promise.reject(new Error("offline")) as never);
         startCollectionCall.mockClear();
         afterCallbacks.length = 0;
     });

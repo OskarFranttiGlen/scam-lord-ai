@@ -18,6 +18,7 @@ import { checkPolicy } from "@/collection/policy";
 import type { TPaymentPlan, TPerk, TPolicy, TPolicyResult, TSignalDecision } from "@/collection/types";
 import { sendSms } from "@/messaging/sms";
 import { getInvoicePaymentStatus, getStripeClient } from "@/payments/stripe";
+import { MISSED_PROMISES_THRESHOLD } from "./call-notes";
 import type { CallContext, CallState, TAcceptedPlan, TCallPerk } from "./context";
 import { fulfilAcceptedPlan, type TFulfilOptions } from "./fulfil-plan";
 import {
@@ -57,8 +58,13 @@ const feedbackInputSchema = z.object({
 /** Returned by policy and payment tools until the check-in has been recorded. */
 const CHECK_IN_FIRST = {
     status: "check_in_first",
-    say: "Not yet: first ask how things are going with the unit and whether anything needs fixing, "
-        + "then call record_feedback with their answer.",
+    say: "Happy to help with that. First, how are things going with the unit? Anything that needs fixing?",
+} as const;
+
+const PLAN_NOT_AVAILABLE = {
+    status: "plan_not_available",
+    say: "Because earlier payment dates were missed, the only thing I can set up today is the full balance. "
+        + "Can you do that?",
 } as const;
 
 const pendingFulfilments = new WeakMap<CallState, Promise<void>>();
@@ -173,8 +179,8 @@ function describePolicyResult(
     return {
         status: result.status,
         say: result.status === "accepted"
-            ? `That works: ${schedule}.`
-            : `${message} Suggested plan: ${schedule}.`,
+            ? `That works: ${schedule}. Shall I set it up?`
+            : `${message} I can do ${schedule}. Does that work?`,
         plan,
     };
 }
@@ -193,10 +199,16 @@ export function getCollectionTools(
 ) {
     const log = deps.log ?? console;
     const channel = deps.channel ?? "voice";
+    const checkInDone = () => channel === "voice" || state.feedbackRecorded;
+    const missedPromises = (ctx.followUp?.brokenPromises.length ?? 0) >= MISSED_PROMISES_THRESHOLD;
+    const notAvailable = (plan: TAcceptedPlan) => missedPromises
+        && (plan.installments.length !== 1 || plan.installments[0].date !== todayIsoDate());
 
     const recordFeedbackTool = tool({
-        description: "Record the tenant's check-in answer (or that they declined) and any repairs they raised. "
-            + "Required before check_policy or accept_plan.",
+        description: channel === "voice"
+            ? "Log a repair or unit problem the tenant raised on the call."
+            : "Record the tenant's check-in answer (or that they declined) and any repairs they raised. "
+                + "Required before check_policy or accept_plan.",
         inputSchema: feedbackInputSchema,
         execute: async ({ summary, declined, issues }) => {
             const line = declined ? "declined" : summary.trim() || "no issues";
@@ -234,9 +246,12 @@ export function getCollectionTools(
     const checkPolicyTool = tool({
         description: "Check a proposed payment plan against landlord policy before you state it",
         inputSchema: planInputSchema,
-        execute: async plan => (
-            state.feedbackRecorded ? describePolicyResult(runPolicy(ctx, plan), channel) : CHECK_IN_FIRST
-        ),
+        execute: async plan => {
+            if (!checkInDone()) {
+                return CHECK_IN_FIRST;
+            }
+            return notAvailable(plan) ? PLAN_NOT_AVAILABLE : describePolicyResult(runPolicy(ctx, plan), channel);
+        },
     });
 
     /**
@@ -277,8 +292,11 @@ export function getCollectionTools(
         inputSchema: planInputSchema,
         execute: async plan => {
             await deps.signalGate?.pending;
-            if (!state.feedbackRecorded) {
+            if (!checkInDone()) {
                 return CHECK_IN_FIRST;
+            }
+            if (notAvailable(plan)) {
+                return PLAN_NOT_AVAILABLE;
             }
             if (state.handoffActive) {
                 return {
@@ -296,8 +314,7 @@ export function getCollectionTools(
 
             const result = runPolicy(ctx, plan);
             if (result.status !== "accepted") {
-                const counter = describePolicyResult(result, channel);
-                return { ...counter, say: `${counter.say} Would that work for you?` };
+                return describePolicyResult(result, channel);
             }
 
             const accepted: TAcceptedPlan = {
@@ -396,6 +413,22 @@ export function getCollectionTools(
         },
     });
 
+    const endCallTool = tool({
+        description: "End the phone call once the conversation is finished: the plan is set up or paid, it is the "
+            + "wrong person, or they want to go. Call it in the same reply as your goodbye.",
+        inputSchema: z.object({
+            reason: z.enum(["done", "wrong_person", "tenant_asked"]),
+        }),
+        execute: async () => {
+            state.callEnded = true;
+            deps.onStateChange?.(state);
+            return {
+                status: "ending",
+                next: "Say a short goodbye in the same reply.",
+            };
+        },
+    });
+
     const confirmPaymentTool = tool({
         description: "Check whether the payment for this invoice has gone through",
         inputSchema: z.object({}),
@@ -404,17 +437,19 @@ export function getCollectionTools(
             const stripe = getStripeClient();
             const invoiceId = state.paymentInvoiceId ?? ctx.stripeInvoiceId;
             if (!stripe) {
-                return "Payment is still pending.";
+                return { status: "pending", say: "Not yet — the payment is still pending." };
             }
             try {
                 const status = await getInvoicePaymentStatus({ stripe, invoiceId });
-                return status.paid ? "Payment has gone through." : "Payment is still pending.";
+                return status.paid
+                    ? { status: "paid", say: "Yes, that payment has gone through." }
+                    : { status: "pending", say: "Not yet — the payment is still pending." };
             } catch (error) {
                 log.warn("[voice] confirm_payment could not read Stripe", {
                     invoiceId,
                     error: error instanceof Error ? error.message : String(error),
                 });
-                return "Payment is still pending.";
+                return { status: "pending", say: "Not yet — the payment is still pending." };
             }
         },
     });
@@ -422,6 +457,7 @@ export function getCollectionTools(
     return {
         record_feedback: recordFeedbackTool,
         record_closing_feedback: recordClosingFeedbackTool,
+        end_call: endCallTool,
         create_office_task: createOfficeTaskTool,
         send_assistance_referral: sendAssistanceReferralTool,
         check_policy: checkPolicyTool,

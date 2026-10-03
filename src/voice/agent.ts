@@ -10,7 +10,7 @@
  * Used by: @/voice/run-turn.ts, @/voice/worker.ts, /api/voice/turn, @/text/handle-inbound-text.ts
  */
 
-import { ToolLoopAgent, gateway, hasToolCall, isStepCount, type ModelMessage } from "ai";
+import { ToolLoopAgent, gateway, isStepCount, type LanguageModel, type ModelMessage } from "ai";
 
 import type { TJevPolicyConstraints } from "@/collection/types";
 import {
@@ -35,6 +35,8 @@ export type TCreateCollectionVoiceAgentProps = {
     onStateChange?: (state: CallState) => void;
     /** `voice` (default) speaks on a call; `text` writes SMS replies. */
     channel?: TConversationChannel;
+    /** Brain override for tests; defaults to the gateway voice model. */
+    model?: LanguageModel;
 };
 
 /**
@@ -48,7 +50,7 @@ export function hasAssistantLine(messages: ModelMessage[] | undefined): boolean 
 
 type TCollectionCallSettings = {
     instructions: string;
-    activeTools?: Array<"record_feedback">;
+    activeTools?: Array<"record_feedback" | "end_call">;
     toolChoice?: "auto" | "none";
 };
 
@@ -72,12 +74,12 @@ export function collectionCallSettings(
             : state.jevChecks.at(-1)?.outcome.reasons ?? [];
         const handoff = buildHandoffInstructions(context, disclosed, reasons, channel, { stopCase: state.stopCase });
         if (state.feedbackRecorded) {
-            return { instructions: handoff, activeTools: [], toolChoice: "none" };
+            return { instructions: handoff, activeTools: ["end_call"], toolChoice: "auto" };
         }
         return {
             instructions: `${handoff}\n- If they mentioned a repair or how the unit is going, call record_feedback with it `
                 + "(urgent for leaks, no heat, no water, gas, electrical, or safety issues) before you reply.",
-            activeTools: ["record_feedback"],
+            activeTools: ["record_feedback", "end_call"],
             toolChoice: "auto",
         };
     }
@@ -96,27 +98,61 @@ export function collectionCallSettings(
 }
 
 /**
+ * Tools whose result `say` line is the whole spoken reply for the turn. When one of them
+ * returns, the loop stops and run-turn speaks the `say` directly, skipping the second
+ * model pass that re-phrases it. Guidance-only tools (record_feedback, create_office_task,
+ * end_call, record_closing_feedback) stay out on purpose: the model must still produce the
+ * reply around them.
+ */
+const SPEAKABLE_TOOLS = new Set(["accept_plan", "check_policy", "confirm_payment", "send_assistance_referral"]);
+
+/** Loop-step slice the stop condition reads; keeps the SDK's generic step types at arm's length. */
+type TToolSayStep = {
+    toolResults: ReadonlyArray<{ toolName: string; output: unknown }>;
+};
+
+/**
+ * Stops the tool loop once a speakable tool returned a `say` line (see {@link SPEAKABLE_TOOLS}).
+ * Results without a spoken `say` line — `next`-only guidance, or a failed call — keep the loop
+ * going so the model can phrase the reply itself.
+ *
+ * @param options.steps - Completed loop steps, newest last
+ */
+function spokeToolSay({ steps }: { steps: readonly TToolSayStep[] }): boolean {
+    const last = steps.at(-1);
+    return last?.toolResults.some(({ toolName, output }) => (
+        SPEAKABLE_TOOLS.has(toolName)
+        && output != null
+        && typeof output === "object"
+        && "say" in output
+        && typeof output.say === "string"
+    )) ?? false;
+}
+
+/**
  * Creates a ToolLoopAgent configured for ScamLord collection turns.
  *
  * @param props.context - Tenancy and invoice snapshot
  * @param props.state - Mutable call state shared with tools
  * @param props.onStateChange - Optional hook when tools mutate state
  * @param props.channel - `voice` (default) or `text`
+ * @param props.model - Optional brain override for tests
  */
 export function createCollectionVoiceAgent({
     context,
     state,
     onStateChange,
     channel = "voice",
+    model = gateway(VOICE_BRAIN_MODEL),
 }: TCreateCollectionVoiceAgentProps) {
     const signalGate: TSignalGate = { pending: null };
     const tools = getCollectionTools(context, state, { onStateChange, signalGate, channel });
 
     const agent = new ToolLoopAgent({
-        model: gateway(VOICE_BRAIN_MODEL),
+        model,
         instructions: buildNegotiationInstructions(context, false, channel),
         tools,
-        stopWhen: [isStepCount(4), hasToolCall("accept_plan")],
+        stopWhen: [isStepCount(4), spokeToolSay],
         maxOutputTokens: 300,
         temperature: 0.3,
         prepareCall: ({ messages, prompt, ...rest }) => {

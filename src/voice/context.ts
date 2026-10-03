@@ -55,6 +55,22 @@ export type TMaintenanceReport = {
     urgent: boolean;
 };
 
+/** One month of rent on the tenant's ledger. */
+export type TLedgerMonth = {
+    /** YYYY-MM of the rent due date. */
+    month: string;
+    amount: number;
+    status: "unpaid" | "late" | "on_time";
+};
+
+/** What earlier conversations left behind, loaded from `calls.ai_notes`. */
+export type TFollowUp = {
+    /** "YYYY-MM-DD: summary" per earlier conversation, newest first. */
+    notes: string[];
+    /** Promised payment dates that passed while the balance was still owed, oldest first. */
+    brokenPromises: Array<{ date: string; amount: number | null }>;
+};
+
 /** Tenancy + invoice snapshot loaded at call start. */
 // eslint-disable-next-line @typescript-eslint/naming-convention -- voice API contract name
 export type CallContext = {
@@ -70,6 +86,11 @@ export type CallContext = {
     stripeInvoiceId: string;
     /** Past repairs for this tenancy, newest first. */
     maintenanceRequests?: TMaintenanceRequest[];
+    /** Who the call is for (landlord or management company); falls back to the property name. */
+    managerName?: string;
+    /** Recent rent months, newest first. */
+    ledger?: TLedgerMonth[];
+    followUp?: TFollowUp;
 };
 
 /** Accepted plan persisted after policy approval and tenant acceptance. */
@@ -106,6 +127,8 @@ export type CallState = {
     stopCase?: TStopCase;
     /** Closing satisfaction score 1–5, from record_closing_feedback. */
     satisfactionScore?: number;
+    /** The agent called end_call; the worker hangs up once it finishes speaking. */
+    callEnded: boolean;
     officeTasks: TOfficeTask[];
 };
 
@@ -122,6 +145,7 @@ export function createInitialCallState(): CallState {
         maintenanceReports: [],
         urgentMaintenance: false,
         personRequestCount: 0,
+        callEnded: false,
         officeTasks: [],
     };
 }
@@ -177,6 +201,7 @@ export function normalizeCallState(value: unknown): CallState {
             ? raw.jevPlaybook
             : undefined,
         personRequestCount: typeof raw.personRequestCount === "number" ? raw.personRequestCount : 0,
+        callEnded: Boolean(raw.callEnded),
         stopCase: parseStopCase(raw.stopCase),
         satisfactionScore: typeof raw.satisfactionScore === "number" ? raw.satisfactionScore : undefined,
         officeTasks: Array.isArray(raw.officeTasks)

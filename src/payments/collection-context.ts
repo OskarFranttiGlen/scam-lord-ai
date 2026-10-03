@@ -14,7 +14,14 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import { z } from "zod";
 
-import { getDemoCallContext, type CallContext, type TCallPerk, type TCallPolicy } from "@/voice/context";
+import { ledgerFromStripeInvoices } from "@/voice/call-opening";
+import {
+    getDemoCallContext,
+    type CallContext,
+    type TCallPerk,
+    type TCallPolicy,
+    type TLedgerMonth,
+} from "@/voice/context";
 import { centsToDollars } from "./stripe";
 
 let cachedDb: SupabaseClient | null = null;
@@ -56,7 +63,10 @@ const policySchema = z.object({
     fee_waiver_cap: z.coerce.number(),
 });
 const perkSchema = z.object({ id: z.string(), body: z.string(), condition_text: z.string() });
-const landlordSchema = z.object({ stripe_connected_account_id: z.string().nullable() });
+const landlordSchema = z.object({
+    stripe_connected_account_id: z.string().nullable(),
+    name: z.string().nullable().optional(),
+});
 
 function one<T>(value: T | T[] | null): T | null {
     if (Array.isArray(value)) {
@@ -76,6 +86,8 @@ export type TTenancyRecord = {
     policy: TCallPolicy | null;
     perks: TCallPerk[] | null;
     connectedAccountId: string | null;
+    /** Landlord name, spoken as who the call is for. */
+    managerName: string | null;
 };
 
 /**
@@ -124,6 +136,7 @@ export async function loadTenancyRecord(
         policy: null,
         perks: null,
         connectedAccountId: null,
+        managerName: null,
     };
     if (!landlordId) {
         return record;
@@ -135,7 +148,7 @@ export async function loadTenancyRecord(
             .eq("landlord_id", landlordId)
             .maybeSingle(),
         db.from("perks").select("id, body, condition_text").eq("landlord_id", landlordId),
-        db.from("landlords").select("stripe_connected_account_id").eq("id", landlordId).maybeSingle(),
+        db.from("landlords").select("stripe_connected_account_id, name").eq("id", landlordId).maybeSingle(),
     ]);
 
     if (policyResult.data) {
@@ -154,7 +167,9 @@ export async function loadTenancyRecord(
         }));
     }
     if (landlordResult.data) {
-        record.connectedAccountId = landlordSchema.parse(landlordResult.data).stripe_connected_account_id;
+        const landlord = landlordSchema.parse(landlordResult.data);
+        record.connectedAccountId = landlord.stripe_connected_account_id;
+        record.managerName = landlord.name?.trim() || null;
     }
     return record;
 }
@@ -182,15 +197,42 @@ function stripeCustomerId(invoice: Stripe.Invoice): string | null {
 }
 
 /**
+ * The customer's recent invoices as ledger rows, or `undefined` when Stripe is unavailable or
+ * the lookup fails.
+ *
+ * @param stripe - Stripe client
+ * @param customerId - Stripe customer id
+ * @param log - Logger
+ */
+async function loadLedger(
+    stripe: Stripe | undefined,
+    customerId: string | null,
+    log: Pick<Console, "warn">,
+): Promise<TLedgerMonth[] | undefined> {
+    if (!stripe || !customerId) {
+        return undefined;
+    }
+    try {
+        const invoices = await stripe.invoices.list({ customer: customerId, limit: 6 });
+        return ledgerFromStripeInvoices(invoices.data);
+    } catch (error) {
+        log.warn("[stripe] ledger lookup failed; using the plain ledger line", error);
+        return undefined;
+    }
+}
+
+/**
  * Builds the `startCollectionCall` input for an invoice. Tenancy contact details win over the
  * Stripe customer's; policy, perks, property, and unit come from Supabase or the demo context.
  *
- * @param input - Invoice, optional expanded customer, optional Supabase client, optional logger
+ * @param input - Invoice, optional expanded customer, optional Supabase client, optional Stripe
+ * client (for the ledger), optional logger
  */
 export async function buildCollectionCallRequest(input: {
     invoice: Stripe.Invoice;
     customer?: Stripe.Customer | null;
     db: SupabaseClient | null;
+    stripe?: Stripe;
     log?: Pick<Console, "warn">;
 }): Promise<TCollectionCallRequest> {
     const { invoice, customer, db } = input;
@@ -209,7 +251,10 @@ export async function buildCollectionCallRequest(input: {
         }
     }
 
+    const ledger = await loadLedger(input.stripe, stripeCustomerId(invoice), log);
     const callContext: CallContext = {
+        ...(record?.managerName ? { managerName: record.managerName } : {}),
+        ...(ledger ? { ledger } : {}),
         tenantName: record?.tenantName ?? invoice.customer_name ?? customer?.name ?? demo.tenantName,
         propertyName: record?.propertyName ?? demo.propertyName,
         unitLabel: record?.unitLabel ?? demo.unitLabel,

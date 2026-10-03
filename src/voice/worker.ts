@@ -46,8 +46,9 @@ import { RoomEvent, type Participant, type RemoteParticipant } from "@livekit/rt
 import { fileURLToPath } from "node:url";
 
 import { createCollectionVoiceAgent } from "./agent";
+import { loadFollowUp, recordCallNotes } from "./call-notes";
 import { ChunkSentenceTokenizer } from "./chunk-tokenizer";
-import { createInitialCallState } from "./context";
+import { createInitialCallState, type CallState } from "./context";
 import {
     SIP_PHONE_NUMBER_ATTRIBUTE,
     detectInboundCaller,
@@ -59,16 +60,35 @@ import { loadCallSetup, loadCallbackSetup } from "./load-call-context";
 import { loadCheckInContext } from "./maintenance";
 import { TENANT_SIP_PARTICIPANT_IDENTITY } from "./outbound-call";
 import { persistCall } from "./persist-call";
+import { getVoiceSupabaseClient } from "./supabase-client";
 import { waitForFulfilment } from "./tools";
 import { UNKNOWN_CALLER_GREETING, UnknownCallerAgent } from "./unknown-caller";
 
 const LIVEKIT_ENV_KEYS = ["LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"] as const;
 
 /** Premade "Will"; ElevenLabs free tier returns 402 for library voices. */
-const DEFAULT_ELEVEN_VOICE_ID = "bIHbv24MWmeRgasZH58o";
+/** "Mark - Natural Conversations" (ElevenLabs shared library; must be added to the account's voices). */
+const DEFAULT_ELEVEN_VOICE_ID = "UgBBYS2sOqTuMpoF3BR0";
 
 /** Pause after an unknown caller's closing line before the room (and phone call) is ended. */
 const UNKNOWN_CALLER_HANGUP_DELAY_MS = 800;
+
+/**
+ * Notes and broken promises from the tenancy's earlier conversations, when there are any.
+ *
+ * @param tenancyId - Tenancy row id, when known
+ * @param openBalance - Balance on this call; nothing owed means no broken promises
+ */
+async function loadFollowUpFor(tenancyId: string | null | undefined, openBalance: number) {
+    const client = getVoiceSupabaseClient();
+    if (!tenancyId || !client) {
+        return undefined;
+    }
+    return loadFollowUp(client, tenancyId, {
+        today: new Date().toISOString().slice(0, 10),
+        stillOwing: openBalance > 0,
+    });
+}
 /** How long to wait for a callback participant's phone attribute before treating it as withheld. */
 const CALLER_ATTRIBUTES_TIMEOUT_MS = 2000;
 
@@ -172,6 +192,31 @@ async function waitForSipAnswer(ctx: JobContext): Promise<boolean> {
 }
 
 /**
+ * Ends the phone call from the agent's side once it says goodbye: after the end_call tool
+ * flags the state, wait for the agent to finish speaking (back to "listening"), then delete
+ * the room after the same closing delay the unknown-caller hangup uses.
+ *
+ * @param ctx - Job context for the call room
+ * @param session - Voice session running the collection agent
+ * @param callState - Call state; `callEnded` is set by the end_call tool
+ */
+function hangUpAfterGoodbye(ctx: JobContext, session: voice.AgentSession, callState: CallState): void {
+    const logger = log();
+    let hangingUp = false;
+    session.on(voice.AgentSessionEventTypes.AgentStateChanged, (ev) => {
+        if (!callState.callEnded || ev.newState !== "listening" || hangingUp) {
+            return;
+        }
+        hangingUp = true;
+        setTimeout(() => {
+            ctx.deleteRoom().catch((error: unknown) => {
+                logger.warn({ error }, "[voice/worker] could not hang up after goodbye");
+            });
+        }, UNKNOWN_CALLER_HANGUP_DELAY_MS);
+    });
+}
+
+/**
  * Waits up to {@link CALLER_ATTRIBUTES_TIMEOUT_MS} for the caller's `sip.phoneNumber`, which can
  * land after the participant is first visible. Resolves either way; a missing number means an
  * unknown caller.
@@ -224,7 +269,9 @@ function createVoiceSession(ctx: JobContext): voice.AgentSession {
             turnDetection: useVadTurns ? "vad" : new inference.TurnDetector(),
             endpointing: useVadTurns ? { minDelay: 450, maxDelay: 2000 } : { minDelay: 300, maxDelay: 2000 },
             // Phone backchannels ("okay", "yeah") and line noise otherwise cut the agent off mid-sentence.
-            interruption: { enabled: true, minWords: 2 },
+            // Phone line noise and backchannels kept cutting the agent off, so it always finishes its
+            // (two-sentence) reply. Tenant audio is kept, not discarded, and becomes the next turn.
+            interruption: { enabled: false, discardAudioIfUninterruptible: false },
             // Preemptive generation would call llmNode before end of turn and run the brain twice.
             preemptiveGeneration: { enabled: false },
         },
@@ -287,13 +334,18 @@ async function answerCallback(ctx: JobContext, roomName: string, startedAt: Date
         });
         attachLatencyLog(session);
         await session.start({ agent, room: ctx.room });
-        session.say(UNKNOWN_CALLER_GREETING, { allowInterruptions: true });
+        session.say(UNKNOWN_CALLER_GREETING);
         return;
     }
 
     const { tenancyId, handoff, priorConversation } = setup;
     const checkIn = await loadCheckInContext({ tenancyId, phone: setup.callContext.phone });
-    const callContext = { ...setup.callContext, maintenanceRequests: checkIn.maintenanceRequests ?? [] };
+    const followUp = await loadFollowUpFor(tenancyId, setup.callContext.openBalance);
+    const callContext = {
+        ...setup.callContext,
+        maintenanceRequests: checkIn.maintenanceRequests ?? [],
+        ...(followUp ? { followUp } : {}),
+    };
     const callState = createInitialCallState();
     callState.handoffActive = handoff.active;
     callState.feedbackRecorded = checkIn.recentFeedback;
@@ -311,6 +363,7 @@ async function answerCallback(ctx: JobContext, roomName: string, startedAt: Date
             channel: "callback",
             carriedHandoffReason: handoff.reason,
         });
+        await recordCallNotes({ roomName, state: callState });
     });
 
     const agent = new ScamLordVoiceAgent({
@@ -321,7 +374,8 @@ async function answerCallback(ctx: JobContext, roomName: string, startedAt: Date
     });
     attachLatencyLog(session, agent);
     await session.start({ agent, room: ctx.room });
-    session.say(greeting, { allowInterruptions: true });
+    hangUpAfterGoodbye(ctx, session, callState);
+    session.say(greeting);
 }
 
 export default defineAgent({
@@ -346,9 +400,11 @@ export default defineAgent({
         const setup = await loadCallSetup(ctx.room.metadata ?? ctx.job.room?.metadata);
         logger.info({ room: roomName, source: setup.source, tenancyId: setup.tenancyId }, "[voice/worker] call context loaded");
         const checkIn = await loadCheckInContext({ tenancyId: setup.tenancyId, phone: setup.callContext.phone });
+        const followUp = await loadFollowUpFor(checkIn.tenancyId, setup.callContext.openBalance);
         const callContext = {
             ...setup.callContext,
             maintenanceRequests: checkIn.maintenanceRequests ?? setup.callContext.maintenanceRequests,
+            ...(followUp ? { followUp } : {}),
         };
         const callState = createInitialCallState();
         const greeting = buildOpeningGreeting(callContext);
@@ -364,6 +420,7 @@ export default defineAgent({
                 tenancyId: setup.tenancyId,
                 channel: "outbound_call",
             });
+            await recordCallNotes({ roomName, state: callState });
         });
 
         const agent = new ScamLordVoiceAgent({
@@ -383,7 +440,8 @@ export default defineAgent({
         }
 
         await session.start({ agent, room: ctx.room });
-        session.say(greeting, { allowInterruptions: true });
+        hangUpAfterGoodbye(ctx, session, callState);
+        session.say(greeting);
     },
 });
 

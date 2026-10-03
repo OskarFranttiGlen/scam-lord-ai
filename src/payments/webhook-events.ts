@@ -6,7 +6,7 @@
  * payment. Dependencies are injected so the route stays thin and tests need no network.
  *
  * Depends on: stripe, @supabase/supabase-js, @/voice/context, ./collection-context, ./stripe
- * Used by: /api/stripe/webhook
+ * Used by: /api/stripe/webhook, /api/cron/follow-ups (via ./follow-ups)
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -96,7 +96,15 @@ async function retrieveCustomer(stripe: Stripe, invoice: Stripe.Invoice): Promis
     return fetched.deleted ? null : fetched;
 }
 
-async function startCallForInvoice(
+/**
+ * Starts a collection call for the invoice after every safety check: the invoice is open and
+ * not rescheduled into a plan, a balance remains, no call for it is active, and collection is
+ * not paused by an open office task. Shared by the Stripe webhook and the follow-up cron.
+ *
+ * @param invoice - Invoice to collect
+ * @param deps - Stripe client, optional Supabase client, call starter, logger
+ */
+export async function startCallForInvoice(
     invoice: Stripe.Invoice,
     deps: TStripeWebhookDeps,
 ): Promise<TStripeWebhookOutcome> {
@@ -119,7 +127,7 @@ async function startCallForInvoice(
     }
 
     const customer = await retrieveCustomer(deps.stripe, invoice);
-    const request = await buildCollectionCallRequest({ invoice, customer, db: deps.db, log });
+    const request = await buildCollectionCallRequest({ invoice, customer, db: deps.db, stripe: deps.stripe, log });
     const { roomName } = await deps.startCollectionCall({
         toPhoneNumber: request.toPhoneNumber,
         callContext: request.callContext,

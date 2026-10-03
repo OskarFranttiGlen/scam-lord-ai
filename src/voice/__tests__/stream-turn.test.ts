@@ -191,6 +191,36 @@ describe("streamVoiceTurn", () => {
         expect(state.transcriptLines).toEqual(["Tenant: deal", "Agent: You're all set."]);
     });
 
+    it("streams a check_policy say turn in one model call", async () => {
+        const brain = fakeBrain([{
+            parts: [{ type: "tool-input-start", toolName: "check_policy" }],
+            steps: [{
+                text: "",
+                toolCalls: [{}],
+                toolResults: [{ output: { say: "That works: $920 today and $920 on October twelfth. Shall I set it up?" } }],
+            }],
+            responseMessages: [{ role: "assistant", content: [] }],
+        }]);
+        const state = createInitialCallState();
+
+        const turn = streamVoiceTurn({
+            agent: brain,
+            userText: "half today and half on the twelfth?",
+            messages: GREETING,
+            state,
+        });
+        const chunks = await collect(turn.textStream);
+        const result = await turn.result;
+
+        expect(brain.calls).toHaveLength(1);
+        expect(chunks.join("")).toBe(
+            `${POLICY_CHECK_FILLER} That works: nine hundred twenty dollars today and nine hundred twenty `
+            + "dollars on October twelfth. Shall I set it up?",
+        );
+        expect(result.messages.at(-1)).toEqual({ role: "assistant", content: result.assistantText });
+        expect(state.transcriptLines.at(-1)).toBe(`Agent: ${result.assistantText}`);
+    });
+
     it("finishes the turn even when the listener stops reading (barge-in)", async () => {
         const brain = fakeBrain([{ parts: [text("First. "), text("Second.")] }]);
 

@@ -5,6 +5,9 @@
  * demo tenancy (`getDemoCallContext()`, overridable via `DEMO_CALL_CONTEXT`). The voice worker
  * must be running to pick up the room.
  *
+ * With a Stripe test key it first makes sure the demo invoice is still open (the previous one
+ * is closed whenever a plan was written), so the agent never falls back to a Checkout link.
+ *
  * Run:
  * ```bash
  * npx tsx scripts/call-tenant.ts --to +15555550102 [--demo]
@@ -12,12 +15,15 @@
  * `--to` falls back to `DEMO_TENANT_PHONE`. `--demo` selects the demo tenancy, which is
  * currently the only context source and therefore the default. Reads `.env` from the cwd.
  *
- * Depends on: dotenv, @/voice/outbound-call, @/voice/demo-context
+ * Depends on: dotenv, @/payments/demo-invoice, @/payments/stripe, @/voice/outbound-call, @/voice/demo-context
  * Used by: manual demo / smoke testing
  */
 
 import "dotenv/config";
 
+import { ensureOpenDemoInvoice } from "../src/payments/demo-invoice";
+import { getStripeClient } from "../src/payments/stripe";
+import type { CallContext } from "../src/voice/context";
 import { getDemoCallContext } from "../src/voice/demo-context";
 import { startCollectionCall } from "../src/voice/outbound-call";
 
@@ -52,6 +58,40 @@ function parseArgs(argv: string[]): { to?: string; demo: boolean } {
 }
 
 /**
+ * Swaps in a payable demo invoice when Stripe test mode is configured. Never blocks the dial:
+ * a Stripe failure logs a warning and the stored context goes out unchanged.
+ *
+ * @param callContext - Demo tenancy the call is about
+ */
+async function ensureDemoInvoice(callContext: CallContext): Promise<CallContext> {
+    if (!process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) {
+        return callContext;
+    }
+    const stripe = getStripeClient();
+    if (!stripe) {
+        return callContext;
+    }
+    try {
+        const { invoiceId, created } = await ensureOpenDemoInvoice({
+            stripe,
+            demo: callContext,
+            invoiceId: process.env.DEMO_STRIPE_INVOICE_ID,
+        });
+        if (created) {
+            console.log(
+                `[call-tenant] previous demo invoice is spent; seeded ${invoiceId}. `
+                + `Update .env (DEMO_STRIPE_INVOICE_ID=${invoiceId}) so the worker sees it too.`,
+            );
+        }
+        return { ...callContext, stripeInvoiceId: invoiceId };
+    } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        console.warn(`[call-tenant] could not refresh the demo invoice (${reason}); dialing with the stored id.`);
+        return callContext;
+    }
+}
+
+/**
  * Places the call and prints the room name.
  */
 async function main(): Promise<void> {
@@ -62,7 +102,7 @@ async function main(): Promise<void> {
         process.exit(1);
     }
 
-    const callContext = getDemoCallContext();
+    const callContext = await ensureDemoInvoice(getDemoCallContext());
     console.log(
         `[call-tenant] dialing ${toPhoneNumber} as ${callContext.propertyName} about `
         + `${callContext.tenantName}'s $${callContext.openBalance} balance…`,

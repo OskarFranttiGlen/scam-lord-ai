@@ -74,6 +74,27 @@ describe("POST /api/sms/inbound", () => {
         expect(handleInboundText).not.toHaveBeenCalled();
     });
 
+    it("sends a reply containing a link as two texts: tidied words, then the bare link", async () => {
+        vi.mocked(handleInboundText).mockResolvedValue({
+            reply: "You're all set: $920 today and $920 on Fri Oct 9. "
+                + "Pay the first $920 here: https://checkout.stripe.com/c/pay/cs_test_1?s=ap I emailed it to you too.",
+            outcome: "replied",
+            latencyMs: 5,
+        });
+        const params = { ...PARAMS, Body: "sounds good" };
+        const signature = computeTwilioSignature(TOKEN, URL_PUBLIC, new URLSearchParams(params));
+
+        const response = await POST(inbound(signature, params));
+
+        expect(response.status).toBe(200);
+        expect(await response.text()).toBe(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response>"
+            + "<Message>You&apos;re all set: $920 today and $920 on Fri Oct 9. "
+            + "Pay the first $920 with the link in the next text. I emailed it to you too.</Message>"
+            + "<Message>https://checkout.stripe.com/c/pay/cs_test_1?s=ap</Message></Response>",
+        );
+    });
+
     it("sends an empty response when there is nothing to say", async () => {
         vi.mocked(handleInboundText).mockResolvedValue({ reply: null, outcome: "keyword", latencyMs: 1 });
         const params = { ...PARAMS, Body: "STOP" };

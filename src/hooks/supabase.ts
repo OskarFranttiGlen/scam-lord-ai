@@ -17,6 +17,7 @@ export type Database = {
     Tables: {
       calls: {
         Row: {
+          ai_notes: Json | null
           channel: string
           conversation: Json | null
           created_at: string
@@ -40,6 +41,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_notes?: Json | null
           channel?: string
           conversation?: Json | null
           created_at?: string
@@ -63,6 +65,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_notes?: Json | null
           channel?: string
           conversation?: Json | null
           created_at?: string

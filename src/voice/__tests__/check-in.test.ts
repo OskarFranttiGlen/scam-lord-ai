@@ -4,7 +4,7 @@ import { collectionCallSettings } from "../agent";
 import { createInitialCallState, normalizeCallState, type CallContext } from "../context";
 import { getDemoCallContext } from "../demo-context";
 import { buildHandoffInstructions, buildNegotiationInstructions } from "../instructions";
-import { buildCallbackGreeting, buildOpeningGreeting } from "../livekit-agent";
+import { buildCallbackGreeting } from "../livekit-agent";
 import { getCollectionTools } from "../tools";
 
 const TOOL_OPTIONS = { toolCallId: "call_1", messages: [], context: {} };
@@ -22,10 +22,10 @@ const OPEN_TAP: NonNullable<CallContext["maintenanceRequests"]>[number] = {
     resolvedAt: null,
 };
 
-describe("check-in gate", () => {
+describe("check-in gate (texts)", () => {
     it("refuses check_policy until the tenant's feedback is recorded", async () => {
         const state = createInitialCallState();
-        const tools = getCollectionTools(context(), state);
+        const tools = getCollectionTools(context(), state, { channel: "text" });
 
         const result = await tools.check_policy.execute?.(TODAY_PLAN, TOOL_OPTIONS);
 
@@ -34,7 +34,7 @@ describe("check-in gate", () => {
 
     it("refuses accept_plan until the tenant's feedback is recorded, and saves nothing", async () => {
         const state = createInitialCallState();
-        const tools = getCollectionTools(context(), state);
+        const tools = getCollectionTools(context(), state, { channel: "text" });
 
         const result = await tools.accept_plan.execute?.(TODAY_PLAN, TOOL_OPTIONS);
 
@@ -45,7 +45,7 @@ describe("check-in gate", () => {
 
     it("opens the policy tools once record_feedback runs", async () => {
         const state = createInitialCallState();
-        const tools = getCollectionTools(context(), state);
+        const tools = getCollectionTools(context(), state, { channel: "text" });
 
         await tools.record_feedback.execute?.(
             { summary: "All good, tap still drips", declined: false, issues: [] },
@@ -60,7 +60,7 @@ describe("check-in gate", () => {
 
     it("records a decline as the feedback and still opens the gate", async () => {
         const state = createInitialCallState();
-        const tools = getCollectionTools(context(), state);
+        const tools = getCollectionTools(context(), state, { channel: "text" });
 
         await tools.record_feedback.execute?.({ summary: "", declined: true, issues: [] }, TOOL_OPTIONS);
 
@@ -70,7 +70,7 @@ describe("check-in gate", () => {
 
     it("logs routine repairs without a handoff", async () => {
         const state = createInitialCallState();
-        const tools = getCollectionTools(context(), state);
+        const tools = getCollectionTools(context(), state, { channel: "text" });
 
         await tools.record_feedback.execute?.(
             { summary: "Bathroom fan is noisy", declined: false, issues: [{ description: "Bathroom fan noisy", urgent: false }] },
@@ -87,7 +87,7 @@ describe("check-in gate", () => {
 
     it("hands off on an urgent repair and blocks collection for the rest of the conversation", async () => {
         const state = createInitialCallState();
-        const tools = getCollectionTools(context(), state);
+        const tools = getCollectionTools(context(), state, { channel: "text" });
 
         await tools.record_feedback.execute?.(
             { summary: "Ceiling leaking", declined: false, issues: [{ description: "Water leaking through bedroom ceiling", urgent: true }] },
@@ -124,59 +124,46 @@ describe("check-in during a handoff", () => {
 
         const settings = collectionCallSettings(context(), state, { disclosed: true, channel: "voice" });
 
-        expect(settings.activeTools).toEqual(["record_feedback"]);
+        expect(settings.activeTools).toEqual(["record_feedback", "end_call"]);
         expect(settings.toolChoice).toBe("auto");
         expect(settings.instructions).toMatch(/record_feedback/);
     });
 
-    it("gives the handed-off agent no tools once the check-in is recorded", () => {
+    it("gives the handed-off agent only end_call once the check-in is recorded", () => {
         const state = createInitialCallState();
         state.handoffActive = true;
         state.feedbackRecorded = true;
 
         const settings = collectionCallSettings(context(), state, { disclosed: true, channel: "voice" });
 
-        expect(settings.activeTools).toEqual([]);
-        expect(settings.toolChoice).toBe("none");
+        expect(settings.activeTools).toEqual(["end_call"]);
+        expect(settings.toolChoice).toBe("auto");
     });
 });
 
-describe("check-in greetings", () => {
-    it("ends the outbound greeting at the disclosure and a good-time question, with no amount", () => {
-        const greeting = buildOpeningGreeting(context());
-
-        expect(greeting).toBe("Hi, is this Jordan? This is an AI assistant calling for Maple Court. Is now a good time?");
-    });
-
-    it("leaves an open repair for the next turn so a bare yes cannot be read as the repair answer", () => {
-        const greeting = buildOpeningGreeting(context({ maintenanceRequests: [OPEN_TAP] }));
-
-        expect(greeting).not.toMatch(/tap|repair|fix/i);
-        expect(greeting.trim().endsWith("Is now a good time?")).toBe(true);
-    });
-
+describe("callback greeting", () => {
     it("does not lead with the balance when a known tenant calls back", () => {
         expect(buildCallbackGreeting(context(), { handoffActive: false })).not.toMatch(/balance/i);
     });
 });
 
 describe("check-in instructions", () => {
-    it("requires the check-in before money while feedback is missing", () => {
-        const prompt = buildNegotiationInstructions(context(), true, "voice", { feedbackRecorded: false });
+    it("requires the check-in before money in a text thread while feedback is missing", () => {
+        const prompt = buildNegotiationInstructions(context(), true, "text", { feedbackRecorded: false });
 
         expect(prompt).toMatch(/CHECK-IN FIRST/);
         expect(prompt).toMatch(/record_feedback/);
     });
 
     it("only tells the agent to say a repair was passed on when the tenant raised one", () => {
-        const prompt = buildNegotiationInstructions(context(), true, "voice", { feedbackRecorded: false });
+        const prompt = buildNegotiationInstructions(context(), true, "text", { feedbackRecorded: false });
 
         expect(prompt).not.toMatch(/After record_feedback, say a new repair has been passed/);
         expect(prompt).toMatch(/only if they raised a repair/);
     });
 
     it("drops the check-in rule once feedback is recorded", () => {
-        const prompt = buildNegotiationInstructions(context(), true, "voice", { feedbackRecorded: true });
+        const prompt = buildNegotiationInstructions(context(), true, "text", { feedbackRecorded: true });
 
         expect(prompt).not.toMatch(/CHECK-IN FIRST/);
     });
