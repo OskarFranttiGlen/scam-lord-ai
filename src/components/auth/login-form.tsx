@@ -2,13 +2,12 @@
 
 /**
  * @module login-form
- * Login card: Apple/Google OAuth buttons, email/password form with validation.
+ * Login card: email/password form with validation.
  * Supports redirect path and forgot-password link.
  * Depends on: Supabase client, UI components, react-hook-form/yup.
  * Used by: auth login page.
  */
 import { cn } from '@/lib/utils'
-import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -20,8 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useState } from 'react'
-import { Separator } from '../ui/separator'
-import { AuthError, Provider } from '@supabase/supabase-js'
+import { AuthError } from '@supabase/supabase-js'
 import { DASHBOARD_PATH } from '@/lib/dashboard-url'
 import { buildAuthSignUpHrefFromNext, sanitizeSignInReturn } from '@/lib/sign-in-return'
 import { handleSignInViaEmail } from '@/lib/auth/form-handlers'
@@ -36,42 +34,13 @@ type TLoginFormProps = React.ComponentPropsWithoutRef<'div'> & {
   redirectPath?: string;
 };
 
-/** Renders login card with OAuth and email/password form. */
+/** Renders login card with email/password form. */
 export function LoginForm({ className, redirectPath = DASHBOARD_PATH, ...props }: TLoginFormProps) {
     const safeRedirectPath = sanitizeSignInReturn(redirectPath);
     const router = useRouter();
 
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [googleIsLoading,setGoogleIsLoading] = useState(false);
-    const [appleIsLoading, setAppleIsLoading] = useState(false);
-
-    const handleSocialLogin = async (e: React.FormEvent, provider: Provider) => {
-        e.preventDefault()
-        const supabase = createClient()
-        if (provider === "apple") {
-            setAppleIsLoading(true);
-            setError(null);
-        } else if (provider === "google") {
-            setGoogleIsLoading(true);
-            setError(null);
-        }
-
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: provider,
-                options: {
-                redirectTo: `${window.location.origin}/auth/oauth?next=${encodeURIComponent(safeRedirectPath)}`,
-                },
-            })
-
-            if (error) throw error
-        } catch (error: unknown) {
-            setError(error instanceof Error ? error.message : 'An error occurred')
-            setGoogleIsLoading(false);
-            setAppleIsLoading(false);
-        }
-    }
 
     const schema = Yup.object({
         email: Yup.string()
@@ -126,25 +95,6 @@ export function LoginForm({ className, redirectPath = DASHBOARD_PATH, ...props }
           <CardTitle className="text-2xl">Login</CardTitle>
         </CardHeader>
         <CardContent>
-            <div className='flex flex-col gap-4'>
-            <form onSubmit={ (e) => handleSocialLogin(e, "apple")}>
-                <div className="flex flex-col gap-6">
-                    {error && <p className="text-sm text-destructive-500">{error}</p>}
-                    <Button variant="secondary" type="submit" className="w-full" disabled={isLoading}>
-                        {appleIsLoading ? 'Logging in...' : 'Continue with Apple'}
-                    </Button>
-                </div>
-           </form>
-            <form onSubmit={ (e) => handleSocialLogin(e, "google")}>
-                <div className="flex flex-col gap-6">
-                    {error && <p className="text-sm text-destructive-500">{error}</p>}
-                    <Button variant="secondary" type="submit" className="w-full" disabled={isLoading}>
-                        {googleIsLoading ? 'Logging in...' : 'Continue with Google'}
-                    </Button>
-                </div>
-           </form>
-            </div>
-           <Separator className=' my-4' />
           <form onSubmit={ handleSubmit(handleLogin) } id={ "sign-in-form"  }>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
