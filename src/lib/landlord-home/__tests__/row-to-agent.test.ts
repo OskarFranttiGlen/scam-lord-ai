@@ -8,6 +8,7 @@ import { rowsToAgents, type ICallNest } from "../row-to-agent";
 
 const CALL: ICallNest = {
     id: "call-1",
+    stripe_invoice_id: "in_blake",
     status: "waiting_on_payment",
     current_step: "payment_link",
     transcript: "Agent: Two payments.\nBlake: Send the link.",
@@ -61,6 +62,22 @@ describe("rowsToAgents", () => {
                 jev: [{ hardship: 0.12, dispute: 0.04, distressed: 0.06, outcome: "continue" }],
             },
         }]);
+    });
+
+    it("fills the open balance from the synced invoice", () => {
+        const due = Date.UTC(2026, 8, 28) / 1000;
+        const agents = rowsToAgents([CALL], new Map([["in_blake", {
+            amountRemainingCents: 184_000,
+            status: "open",
+            dueDateUnix: due,
+            hostedUrl: "https://pay.example/in_blake",
+        }]]));
+        expect(agents[0]?.invoice).toEqual({
+            amount: 1840,
+            status: "open",
+            dueDate: "2026-09-28",
+            hostedUrl: "https://pay.example/in_blake",
+        });
     });
 
     it("returns no agents for an empty list", () => {

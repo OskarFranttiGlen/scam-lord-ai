@@ -2,8 +2,8 @@
 
 /**
  * @module LandlordHome
- * Right-panel tabs. Home and Live calls are outlets; Settings and Billing are empty.
- * On sm+, Home and Live calls (with the Call now action) portal into #toolbar-nav-portal.
+ * Right-panel tabs. Home and Agent Status are outlets; Settings and Billing are empty.
+ * On sm+, Home and Agent Status (with the Call now action) portal into #toolbar-nav-portal.
  * Settings and Billing are opened from the sidebar.
  * Depends on: tabs, AgentFloor, CallNowButton, home panels, dashboard-panel.
  * Used by: ProgramGrid.
@@ -29,7 +29,7 @@ function HomeNav({ className }: { className?: string }) {
         <div className={ cn("flex items-center gap-2", className) }>
             <TabsList>
                 <TabsTrigger value="home">Home</TabsTrigger>
-                <TabsTrigger value="live">Live calls</TabsTrigger>
+                <TabsTrigger value="live">Agent Status</TabsTrigger>
             </TabsList>
             <CallNowButton />
         </div>
@@ -42,7 +42,7 @@ function EmptyTab({ children }: { children: string }) {
     );
 }
 
-/** Home | Live calls in the toolbar. Settings and Billing from the sidebar. Default is Home. */
+/** Home | Agent Status in the toolbar. Settings and Billing from the sidebar. Default is Home. */
 export function LandlordHome() {
     const { agents, loading, error, flash } = useCalls();
     const metrics = useHomeMetrics();

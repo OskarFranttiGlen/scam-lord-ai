@@ -39,7 +39,7 @@ describe("LandlordHome nav", () => {
         vi.restoreAllMocks();
     });
 
-    it("portals Home and Live calls into the toolbar on desktop", async () => {
+    it("portals Home and Agent Status into the toolbar on desktop", async () => {
         mockDesktop(true);
         const slot = document.createElement("div");
         slot.id = "toolbar-nav-portal";
@@ -49,7 +49,7 @@ describe("LandlordHome nav", () => {
 
         await waitFor(() => {
             expect(slot.textContent).toContain("Home");
-            expect(slot.textContent).toContain("Live calls");
+            expect(slot.textContent).toContain("Agent Status");
         });
         expect(slot.textContent).toContain("Call now");
         expect(slot.textContent).not.toContain("Settings");

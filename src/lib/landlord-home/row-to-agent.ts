@@ -16,8 +16,18 @@ import {
 const STATUSES = new Set<TAgentStatus>(["in_progress", "waiting_on_payment", "waiting_on_person", "paid"]);
 const STEPS = new Set<string>(AGENT_STEPS);
 
+/** Stripe Sync invoice joined on `calls.stripe_invoice_id`. */
+export interface ISyncedCallInvoice {
+    amountRemainingCents: number;
+    status: string | null;
+    /** Unix seconds. */
+    dueDateUnix: number | null;
+    hostedUrl: string | null;
+}
+
 export interface ICallNest {
     id: string;
+    stripe_invoice_id: string | null;
     status: string;
     current_step: string | null;
     transcript: string | null;
@@ -79,6 +89,20 @@ function jevOf(value: unknown): IJevCheck[] {
     return checks;
 }
 
+/** Open balance is this invoice's amount remaining. */
+function invoiceOf(synced: ISyncedCallInvoice | undefined) {
+    if (!synced) {
+        return { amount: 0, status: "", dueDate: "", hostedUrl: "" };
+    }
+    const due = synced.dueDateUnix;
+    return {
+        amount: synced.amountRemainingCents / 100,
+        status: synced.status ?? "",
+        dueDate: due == null ? "" : new Date(due * 1000).toISOString().slice(0, 10),
+        hostedUrl: synced.hostedUrl ?? "",
+    };
+}
+
 function planLabel(count: number, amounts: number[]): string {
     const first = amounts[0] ?? 0;
     if (amounts.length > 0 && amounts.every((amount) => amount === first)) {
@@ -87,8 +111,14 @@ function planLabel(count: number, amounts: number[]): string {
     return count > 0 ? `${count} installments` : "";
 }
 
-/** @param rows - Nested `calls` select. Missing joins become empty agent fields. */
-export function rowsToAgents(rows: readonly ICallNest[]): IAgent[] {
+/**
+ * @param rows - Nested `calls` select. Missing joins become empty agent fields.
+ * @param invoices - Stripe Sync rows keyed by invoice id. Missing sync stays at $0.
+ */
+export function rowsToAgents(
+    rows: readonly ICallNest[],
+    invoices: ReadonlyMap<string, ISyncedCallInvoice> = new Map(),
+): IAgent[] {
     return rows.map((row) => {
         const plan = row.plans?.[0] ?? null;
         const amounts = (plan?.installment_amounts ?? []).map(Number);
@@ -104,13 +134,9 @@ export function rowsToAgents(rows: readonly ICallNest[]): IAgent[] {
             property,
             status: statusOf(row.status),
             currentStep: stepOf(row.current_step),
-            invoice: {
-                // ponytail: Stripe sync fills amount, due date, and link (05)
-                amount: 0,
-                status: "",
-                dueDate: "",
-                hostedUrl: "",
-            },
+            invoice: invoiceOf(
+                row.stripe_invoice_id ? invoices.get(row.stripe_invoice_id) : undefined,
+            ),
             schedule: {
                 installments: plan?.installment_count ?? 0,
                 dates: plan?.installment_dates ?? [],

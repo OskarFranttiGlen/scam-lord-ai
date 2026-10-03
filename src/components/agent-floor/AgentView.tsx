@@ -109,6 +109,7 @@ export function AgentView({ agent, onBack, flash = null }: IProps) {
     const nodes = markFlash(built.nodes, flash);
     const edges = built.edges;
     const latestJev = agent.trace.jev[agent.trace.jev.length - 1];
+    const paid = agent.status === "paid";
 
     return (
         <div className="flex h-full min-h-0">
@@ -157,19 +158,33 @@ export function AgentView({ agent, onBack, flash = null }: IProps) {
                         />
                     </div>
 
-                    <div className="rounded-[1.25rem] bg-muted/60 px-4 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">
-                            Open balance
-                        </p>
-                        <p className="mt-1 font-main text-2xl tabular-nums tracking-tight">
-                            {formatMoney(agent.invoice.amount)}
-                        </p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Due {agent.invoice.dueDate}
-                            {" · "}
-                            {STEP_LABEL[agent.currentStep]}
-                        </p>
-                    </div>
+                    {paid ? (
+                        <div className="flex items-center gap-3 rounded-[1.25rem] bg-status-paid px-4 py-3 text-status-paid-foreground">
+                            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background/70">
+                                <Check className="h-5 w-5" aria-hidden />
+                            </span>
+                            <div>
+                                <p className="font-main text-xl leading-tight tracking-tight">
+                                    Payment received
+                                </p>
+                                <p className="mt-0.5 text-sm">Nothing left open</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="rounded-[1.25rem] bg-muted/60 px-4 py-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">
+                                Open balance
+                            </p>
+                            <p className="mt-1 font-main text-2xl tabular-nums tracking-tight">
+                                {formatMoney(agent.invoice.amount)}
+                            </p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Due {agent.invoice.dueDate}
+                                {" · "}
+                                {STEP_LABEL[agent.currentStep]}
+                            </p>
+                        </div>
+                    )}
                 </header>
 
                 <ScrollArea className="min-h-0 flex-1">

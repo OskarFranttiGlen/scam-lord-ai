@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -30,11 +31,12 @@ export function StatusBadge({ status, className }: IStatusBadgeProps) {
     return (
         <Badge
             className={cn(
-                "rounded-full border-transparent px-3 py-1.5 text-sm font-semibold shadow-none",
+                "gap-1.5 rounded-full border-transparent px-3 py-1.5 text-sm font-semibold shadow-none",
                 TOKEN_CLASS[token],
                 className,
             )}
         >
+            {status === "paid" ? <Check className="h-3.5 w-3.5" aria-hidden /> : null}
             {label}
         </Badge>
     );

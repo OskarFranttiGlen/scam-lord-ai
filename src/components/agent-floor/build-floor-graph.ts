@@ -29,6 +29,8 @@ export interface IFloorNodeData extends Record<string, unknown> {
     label: string;
     tenant: string;
     current: boolean;
+    /** Payment landed on this step. */
+    success: boolean;
 }
 
 /**
@@ -53,6 +55,7 @@ export function buildFloorGraph(agents: readonly IAgent[]): {
                     label: STEP_LABEL[step],
                     tenant: agent.tenant,
                     current,
+                    success: step === "paid" && (agent.status === "paid" || agent.currentStep === "paid"),
                 },
             });
         });

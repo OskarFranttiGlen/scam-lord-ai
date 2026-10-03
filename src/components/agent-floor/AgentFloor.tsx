@@ -36,7 +36,7 @@ export function AgentFloor({
     const selected = openId ? agents.find((agent) => agent.id === openId) : undefined;
 
     if (agents.length === 0) {
-        return <p className="p-6 text-sm text-muted-foreground">No live calls.</p>;
+        return <p className="p-6 text-sm text-muted-foreground">No agents.</p>;
     }
 
     if (selected) {
