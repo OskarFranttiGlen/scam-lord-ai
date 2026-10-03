@@ -1,13 +1,5 @@
 /**
  * Tools always kept when a skill sets `allowedTools` (route prepareCall).
- * C2 companions: sandbox trio + Questionnaire gate.
- * getMoreInfoQuestions must survive so an optional clarify turn can still open
- * the gate after mutate-artifact is loaded. readArtifact / mutateArtifact come
- * from the skill allowlist (not always-available).
+ * The Agent manager only reads agents (ADR 0002 / 03).
  */
-export const ALWAYS_AVAILABLE_CHAT_TOOLS = [
-    "loadSkill",
-    "readFile",
-    "bash",
-    "getMoreInfoQuestions",
-] as const;
+export const ALWAYS_AVAILABLE_CHAT_TOOLS = ["readAgents"] as const;

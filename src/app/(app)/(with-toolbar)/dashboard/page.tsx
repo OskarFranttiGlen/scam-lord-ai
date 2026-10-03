@@ -13,7 +13,7 @@ import { Suspense } from "react";
 import { Dashboard } from "./Dashboard";
 
 export const metadata = {
-    title: "Build Program | AI Program Builder",
+    title: "ScamLord",
     description: "Edit your custom program",
 };
 

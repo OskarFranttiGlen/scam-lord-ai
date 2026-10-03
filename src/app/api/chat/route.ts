@@ -130,20 +130,6 @@ async function handleChatPost(req: Request) {
                 const skills = await discoverSkills(sandbox, ['.agents/skills']);
                 const activeToolScope: { allowedTools: string[] | null } = { allowedTools: null };
 
-                const skillToolsContext = {
-                    loadSkill: {
-                        sandbox,
-                        skills,
-                        activeToolScope,
-                    },
-                    readFile: {
-                        sandbox,
-                    },
-                    bash: {
-                        sandbox,
-                    },
-                };
-
                 const agent = new ToolLoopAgent({
                     model: gateway(
                         'google/gemini-3.1-flash-lite',
@@ -152,7 +138,6 @@ async function handleChatPost(req: Request) {
                         // 'anthropic/claude-sonnet-4.5'
                     instructions: systemPrompt,
                     tools: tools,
-                    toolsContext: skillToolsContext,
                     callOptionsSchema: callOptionsSchema,
                     stopWhen: isStepCount(28),
                     telemetry: { isEnabled: true },
@@ -173,19 +158,6 @@ async function handleChatPost(req: Request) {
                             ...settings,
                             tools: filteredTools,
                             instructions: `${settings.instructions}\n\n${buildSkillsPrompt(options.skills)}`,
-                            toolsContext: {
-                                loadSkill: {
-                                    sandbox: options.sandbox,
-                                    skills: options.skills,
-                                    activeToolScope: options.activeToolScope,
-                                },
-                                readFile: {
-                                    sandbox: options.sandbox,
-                                },
-                                bash: {
-                                    sandbox: options.sandbox,
-                                },
-                            },
                         };
                     },
 

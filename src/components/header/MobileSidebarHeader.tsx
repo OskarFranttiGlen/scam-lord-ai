@@ -23,9 +23,9 @@ export function MobileSidebarHeader() {
       role="banner"
     >
       <CustomTrigger />
-      <Link href="/" className="absolute left-1/2 -translate-x-1/2" aria-label="Shipworthy home">
+      <Link href="/" className="absolute left-1/2 -translate-x-1/2" aria-label="ScamLord home">
         <span className="font-tertiary text-lg font-bold tracking-tight text-foreground">
-          Shipworthy
+          ScamLord
         </span>
       </Link>
       {isDashboard ? (

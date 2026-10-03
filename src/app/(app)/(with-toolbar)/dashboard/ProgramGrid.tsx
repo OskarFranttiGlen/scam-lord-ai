@@ -2,16 +2,13 @@
 
 /**
  * @module ProgramGrid
- * Builds ArtifactGrid props from the Chat artifact document or shows the
- * loading skeleton (ADR 0034 / 04).
- * Depends on: ArtifactGrid, DashboardSkeleton, document-grid.
+ * The panel opposite the sidebar chat. Renders the agent floor (ADR 0002 / 02).
+ * Depends on: AgentFloor.
  * Used by: ProgramEditor.
  */
 
 import { memo } from "react";
-import { ArtifactGrid } from "@/components/artifact-builder/day-card/ArtifactGrid";
-import { DashboardSkeleton } from "@/components/artifact-builder/shared/DashboardSkeleton";
-import { documentWeekCount } from "@/components/artifact-builder/day-card/document-grid";
+import { AgentFloor } from "@/components/agent-floor/AgentFloor";
 
 export interface IProps {
     document: TChatArtifactDocument;
@@ -19,13 +16,13 @@ export interface IProps {
 }
 
 function ProgramGridInner({ document, isMobile }: IProps) {
-    return documentWeekCount(document) > 0 ? (
-        <ArtifactGrid
-            document={document}
-            isMobile={isMobile}
-        />
-    ) : (
-        <DashboardSkeleton />
+    void document;
+    void isMobile;
+
+    return (
+        <div className="h-full min-h-0 flex-1">
+            <AgentFloor />
+        </div>
     );
 }
 

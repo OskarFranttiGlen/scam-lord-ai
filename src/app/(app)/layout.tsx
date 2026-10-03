@@ -37,7 +37,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-    title: "Shipworthy",
+    title: "ScamLord",
     description: "Hackathon template: chat that builds a structured artifact.",
     manifest: "/manifest.webmanifest",
     icons: {

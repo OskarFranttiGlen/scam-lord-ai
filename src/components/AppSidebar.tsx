@@ -335,7 +335,7 @@ export function AppSidebar() {
                             >
                                 <PanelLeft className="shrink-0" />
                                 <span className="font-tertiary text-base font-bold tracking-tight text-foreground">
-                                    Shipworthy
+                                    ScamLord
                                 </span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

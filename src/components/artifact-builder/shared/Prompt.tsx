@@ -55,7 +55,7 @@ export const Prompt: React.FC<IProps> = ({ userData }) => {
                 </div>
                 <div className="relative z-20 hidden w-full shrink-0 justify-center sm:flex">
                     <span className="font-tertiary text-2xl font-bold tracking-tight text-foreground">
-                        Shipworthy
+                        ScamLord
                     </span>
                 </div>
 

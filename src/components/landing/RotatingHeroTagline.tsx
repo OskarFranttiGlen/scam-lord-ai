@@ -2,7 +2,7 @@
 
 /**
  * @module RotatingHeroTagline
- * Homepage hero headline. Cycles generic Shipworthy template lines with a
+ * Homepage hero headline. Cycles generic ScamLord template lines with a
  * clip-masked word assemble (blur settle) and a soft line exit handoff.
  * Used by: Prompt. Depends on: motion/react.
  */

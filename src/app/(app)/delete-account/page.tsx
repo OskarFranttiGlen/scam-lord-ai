@@ -11,8 +11,8 @@
 import { DeleteAccountPageContent } from "./DeleteAccountPageContent";
 
 export const metadata = {
-    title: "Delete Account | Shipworthy",
-    description: "Permanently delete your Shipworthy account and all associated data.",
+    title: "Delete Account | ScamLord",
+    description: "Permanently delete your ScamLord account and all associated data.",
 };
 
 /** Delete-account page; opens the same DeleteAccountDialog as the Navbar/Sidebar menu. */

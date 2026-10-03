@@ -10,7 +10,7 @@
 
 export const metadata = {
   title: "Login or Signup",
-  description: "Login or signup to your Shipworthy account",
+  description: "Login or signup to your ScamLord account",
 };
 
 /**

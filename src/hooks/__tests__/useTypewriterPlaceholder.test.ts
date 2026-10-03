@@ -22,7 +22,7 @@ describe("useTypewriterPlaceholder brand strings", () => {
         expect(PROMPT_OPTIONS.join(" ")).not.toMatch(/Andy|Hyrox|workout|push pull/i);
     });
 
-    it("returns the Shipworthy prefix once typing starts", () => {
+    it("returns the ScamLord prefix once typing starts", () => {
         vi.useFakeTimers();
         const { result } = renderHook(() => useTypewriterPlaceholder());
 
