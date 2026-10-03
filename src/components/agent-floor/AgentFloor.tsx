@@ -13,6 +13,12 @@ import "@xyflow/react/dist/style.css";
 import { DEFAULT_AGENTS } from "@/lib/agent-floor/agents";
 import { buildFloorGraph } from "./build-floor-graph";
 import { AgentView } from "./AgentView";
+import {
+    FLOOR_MAX_ZOOM,
+    FLOOR_MIN_ZOOM,
+    FLOOR_NODE_TYPES,
+    chainStartViewport,
+} from "./StepNode";
 
 /** Floor of every working agent, or the agent view when one chain is open. */
 export function AgentFloor() {
@@ -35,12 +41,15 @@ export function AgentFloor() {
             <ReactFlow
                 nodes={ nodes }
                 edges={ edges }
+                nodeTypes={ FLOOR_NODE_TYPES }
                 onNodeClick={ (event, node) => {
                     void event;
                     const agentId = node.id.split(":")[0];
                     setSelectedId(agentId ?? null);
                 } }
-                fitView
+                defaultViewport={ nodes[0] ? chainStartViewport(nodes[0]) : undefined }
+                minZoom={ FLOOR_MIN_ZOOM }
+                maxZoom={ FLOOR_MAX_ZOOM }
             >
                 <Background />
             </ReactFlow>

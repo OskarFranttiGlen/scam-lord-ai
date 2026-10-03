@@ -1,12 +1,7 @@
 /**
- * @module artifact-builder/utils/authentication
+ * @module lib/auth/form-handlers
  *
- * Thin wrappers around the core authentication API (`@/api/authentication`)
- * that add client-side validation and toast notifications before delegating
- * to the underlying Supabase auth calls. Each handler guards against empty
- * fields and surfaces user-facing error messages via Sonner toasts.
- *
- * Depends on: @/api/authentication, next/navigation (AppRouterInstance), sonner
+ * Thin wrappers around `@/api/authentication` with toast validation.
  * Used by: sign-up, sign-in, and password-reset form components
  */
 

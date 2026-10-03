@@ -1,0 +1,2 @@
+-- Placeholder: already applied on remote ScamLord.AI (20261003193000).
+-- Do not edit; keeps supabase migration history in sync.

@@ -217,8 +217,8 @@ export const Agent: React.FC<IProps> = (props) => {
                             {messages.length === 0 ? (
                                 <ConversationEmptyState
                                     icon={<MessageSquare className="size-12" />}
-                                    title="Start a conversation"
-                                    description="Type a message below to begin chatting"
+                                    title="Welcome to Agent Manager"
+                                    description="Type a message below to see what your Agents are doing for you"
                                 />
                             ) : (
                                 <MessageBubbles

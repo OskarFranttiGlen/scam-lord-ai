@@ -1,14 +1,11 @@
 /**
  * @module chat
  *
- * Streaming chat API route for **Agent** (Shipworthy template).
- * Receives conversation messages, then runs a Vercel AI SDK ToolLoopAgent
- * with the C2 keep-set tools and streams incremental UI updates.
- *
- * Observability is provided by Langfuse via OpenTelemetry.
+ * Streaming chat API for the RentRecovery agent manager.
+ * Runs a Vercel AI SDK ToolLoopAgent and streams UI updates.
  *
  * Depends on: ai (Vercel AI SDK), @langfuse/tracing, ./instructions, ./tools
- * Used by: Chat.tsx (artifact-builder agent panel)
+ * Used by: dashboard chat panel
  */
 
 import { ToolLoopAgent, createAgentUIStreamResponse, gateway, isStepCount } from 'ai';
@@ -16,10 +13,6 @@ import { after } from 'next/server';
 import { observe, propagateAttributes } from '@langfuse/tracing';
 import { langfuseSpanProcessor } from '../../../../instrumentation';
 import { createClient } from '@/utils/supabase/server';
-import {
-    tryConsumeMonthlyLlmRequest,
-    usageCapResponse,
-} from '@/lib/server-feature-limits';
 import { instructions } from './instructions/instructions';
 import { getTools } from './tools/tools';
 import { createSandbox } from './skills/sandbox';
@@ -29,15 +22,14 @@ import { sanitizeMessagesWithUnresolvedToolCalls } from './sanitize-messages';
 import { ALWAYS_AVAILABLE_CHAT_TOOLS } from './always-available-tools';
 import { streamAgentOnError } from './stream-on-error';
 
-// Vercel serverless function timeout - 2 minutes for longer agent turns
 export const maxDuration = 120;
 
 function buildSkillsPrompt(skills: ISkillMetadata[]): string {
     if (skills.length === 0) return '';
 
     const skillsList = skills
-      .map(s => `- ${s.name}: ${s.description}`)
-      .join('\n');
+        .map(s => `- ${s.name}: ${s.description}`)
+        .join('\n');
 
     return `
         ## Skills
@@ -64,49 +56,18 @@ const callOptionsSchema = z.object({
     }),
 });
 
-
-/**
- * Handles a chat turn: builds the system prompt and tool set, runs the
- * ToolLoopAgent, and returns a streaming UI response.
- *
- * @param req - Request whose JSON body contains `messages`, optional
- *   `chatSessionId`, and optional `debugMode`.
- * @returns A streaming `Response` that the Vercel AI SDK client consumes to
- *   render incremental agent output and tool invocations.
- */
 async function handleChatPost(req: Request) {
     try {
         const {
             messages,
             chatSessionId,
             debugMode = false,
-            artifactDocument,
         } = await req.json();
 
         void debugMode;
 
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
-
-        // Authenticated LLM meter: consume before any model/stream work (ADR 0019).
-        // Paywall: 402 + { error: "usage_cap", feature: "monthly_llm_requests", resets_on? }.
-        // Anonymous: no RPC; client localStorage remains the only meter.
-        if (user) {
-            const consume = await tryConsumeMonthlyLlmRequest(supabase, user);
-            if (!consume.ok) {
-                if (consume.reason === 'usage_cap') {
-                    return usageCapResponse({ resets_on: consume.resets_on });
-                }
-                console.error('try_consume_feature_usage failed:', consume.error);
-                return new Response(
-                    JSON.stringify({ error: 'Failed to process chat request' }),
-                    {
-                        status: 500,
-                        headers: { 'Content-Type': 'application/json' },
-                    },
-                );
-            }
-        }
 
         const userId = user?.id?.slice(0, 200) || undefined;
         const sessionId = typeof chatSessionId === 'string' && chatSessionId.trim()
@@ -119,12 +80,7 @@ async function handleChatPost(req: Request) {
                 const sanitizedMessages = sanitizeMessagesWithUnresolvedToolCalls(messages);
 
                 const systemPrompt = instructions();
-                const tools = getTools({
-                    artifactDocument:
-                        artifactDocument && typeof artifactDocument === "object"
-                            ? artifactDocument as TChatArtifactDocument
-                            : undefined,
-                });
+                const tools = getTools();
 
                 const sandbox = createSandbox({ workingDirectory: process.cwd() });
                 const skills = await discoverSkills(sandbox, ['.agents/skills']);
@@ -133,9 +89,7 @@ async function handleChatPost(req: Request) {
                 const agent = new ToolLoopAgent({
                     model: gateway(
                         'google/gemini-3.1-flash-lite',
-                        // 'google/gemini-3-flash'
                     ),
-                        // 'anthropic/claude-sonnet-4.5'
                     instructions: systemPrompt,
                     tools: tools,
                     callOptionsSchema: callOptionsSchema,
@@ -183,7 +137,6 @@ async function handleChatPost(req: Request) {
                     agent,
                     uiMessages: sanitizedMessages,
                     options: { sandbox, skills, activeToolScope },
-                    // Safe class code to client; real error stays in server logs + Langfuse (ADR 03).
                     onError: streamAgentOnError,
                 });
             }

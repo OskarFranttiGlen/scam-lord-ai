@@ -11,7 +11,6 @@
 import {
     LogOut,
     Receipt,
-    Crown,
     Trash2,
     Settings,
     Sun,
@@ -45,9 +44,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUserContext } from "@/contexts/UserContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useMyFeatureLimits, useUserFullName, useChatIds } from "@/api/hooks";
+import { useUserFullName, useChatIds } from "@/api/hooks";
 import { signOutUser } from "@/api/authentication";
-import { TestUserTierToggle } from "@/components/TestUserTierToggle";
 import { TestUserDebugModeToggle } from "@/components/TestUserDebugModeToggle";
 import { isTestUser } from "@/api/feature-limits";
 import { cn } from "@/lib/utils";
@@ -87,8 +85,6 @@ export function AppSidebar() {
     const { user, isLoading } = useUserContext();
     const { theme, setTheme } = useTheme();
     const { data: userFullName } = useUserFullName(user?.id ? user.id : undefined);
-    const { data: featureLimits } = useMyFeatureLimits(user);
-    const isPro = featureLimits?.has_active_subscription === true;
     const stripePortalUrl = process.env.NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL?.trim() || "";
 
     const [openDeleteAccountDialog, setOpenDeleteAccountDialog] = useState(false);
@@ -405,7 +401,6 @@ export function AppSidebar() {
                             <SidebarSeparator />
                             <SidebarGroup>
                                 <SidebarGroupContent>
-                                    <TestUserTierToggle />
                                     <TestUserDebugModeToggle />
                                 </SidebarGroupContent>
                             </SidebarGroup>
@@ -479,20 +474,16 @@ export function AppSidebar() {
                                             Units
                                         </DropdownMenuLabel>
                                        
-                                        {user && isPro && stripePortalUrl && (
+                                        {user && stripePortalUrl && (
                                             <>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal flex items-center gap-1.5">
-                                                    <Crown className="h-4 w-4" />
-                                                    Pro account
-                                                </DropdownMenuLabel>
                                                 <DropdownMenuItem asChild>
                                                     <a
                                                         href={stripePortalUrl}
                                                         className="cursor-pointer flex items-center gap-2"
                                                     >
                                                         <Receipt className="h-4 w-4" />
-                                                        Manage Subscription
+                                                        Manage billing
                                                     </a>
                                                 </DropdownMenuItem>
                                             </>

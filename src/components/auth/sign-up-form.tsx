@@ -25,7 +25,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from "@hookform/resolvers/yup";
 import { DASHBOARD_PATH } from '@/lib/dashboard-url';
 import { buildAuthLoginHrefFromNext } from '@/lib/sign-in-return';
-import { handleSignUpViaEmail } from '@/components/artifact-builder/utils/authentication';
+import { handleSignUpViaEmail } from '@/lib/auth/form-handlers';
 import { useRouter } from 'next/navigation';
 
 /** Props: div props plus optional redirectPath preserved for login link (Sign-in return). */

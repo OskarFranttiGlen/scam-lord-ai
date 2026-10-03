@@ -24,7 +24,7 @@ import { Separator } from '../ui/separator'
 import { AuthError, Provider } from '@supabase/supabase-js'
 import { DASHBOARD_PATH } from '@/lib/dashboard-url'
 import { buildAuthSignUpHrefFromNext, sanitizeSignInReturn } from '@/lib/sign-in-return'
-import { handleSignInViaEmail } from '@/components/artifact-builder/utils/authentication'
+import { handleSignInViaEmail } from '@/lib/auth/form-handlers'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import * as Yup from "yup";

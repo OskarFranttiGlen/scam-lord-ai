@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useState } from 'react'
-import { handleResetPasswordRequest } from '@/components/artifact-builder/utils/authentication'
+import { handleResetPasswordRequest } from '@/lib/auth/form-handlers'
 import { toast } from 'sonner'
 
 /** Props: div props (e.g. className) for the form container. */
