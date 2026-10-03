@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { instructions } from "@/app/api/chat/instructions/instructions";
 import { getTools } from "@/app/api/chat/tools/tools";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 describe("chat instructions", () => {
     const prompt = instructions();
@@ -27,6 +28,7 @@ describe("chat instructions", () => {
 
 describe("chat tools match the Agent manager", () => {
     it("registers readAgents", () => {
-        expect(Object.keys(getTools())).toEqual(["readAgents"]);
+        const mock: unknown = { from() { throw new Error("not used"); } };
+        expect(Object.keys(getTools(mock as SupabaseClient))).toEqual(["readAgents"]);
     });
 });

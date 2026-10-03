@@ -4,18 +4,40 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { AGENT_EDGES, AGENT_STEPS, DEFAULT_AGENTS } from "@/lib/agent-floor/agents";
+import { AGENT_EDGES, AGENT_STEPS, type IAgent, type TAgentStep } from "@/lib/agent-floor/agents";
 import { buildFloorGraph } from "../build-floor-graph";
 import { chainStartViewport } from "../StepNode";
 
+function agent(id: string, currentStep: TAgentStep): IAgent {
+    return {
+        id,
+        tenant: id,
+        property: "",
+        status: "in_progress",
+        currentStep,
+        invoice: { amount: 0, status: "", dueDate: "", hostedUrl: "" },
+        schedule: { installments: 0, dates: [], amounts: [] },
+        outcomes: { callPlaced: false, planAccepted: false, paymentCleared: false },
+        policy: { maxInstallments: 0, graceDays: 0, feeWaiverCap: 0 },
+        perks: [],
+        trace: { transcript: [], perkId: null, plan: "", jev: [] },
+    };
+}
+
+const agents = [
+    agent("agent-in-progress", "jev"),
+    agent("agent-waiting-payment", "payment_link"),
+    agent("agent-handoff", "handoff"),
+];
+
 describe("buildFloorGraph", () => {
-    const { nodes, edges } = buildFloorGraph(DEFAULT_AGENTS);
+    const { nodes, edges } = buildFloorGraph(agents);
 
     it("builds one chain per agent", () => {
         const agentIds = new Set(nodes.map((node) => node.id.split(":")[0]));
         expect(agentIds.size).toBe(3);
-        expect(nodes).toHaveLength(DEFAULT_AGENTS.length * AGENT_STEPS.length);
-        expect(edges).toHaveLength(DEFAULT_AGENTS.length * AGENT_EDGES.length);
+        expect(nodes).toHaveLength(agents.length * AGENT_STEPS.length);
+        expect(edges).toHaveLength(agents.length * AGENT_EDGES.length);
         expect(nodes.find((node) => node.id === "agent-waiting-payment:invoice")?.position.y).toBe(220);
     });
 

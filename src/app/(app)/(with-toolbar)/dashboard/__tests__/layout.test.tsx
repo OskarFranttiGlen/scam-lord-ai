@@ -30,10 +30,10 @@ describe("(with-toolbar) layout.tsx", () => {
         expect(className).toContain("flex");
     });
 
-    it("keeps title and actions portal targets", () => {
+    it("keeps centered nav and actions portal targets", () => {
         render(<ArtifactBuilderLayout>{null}</ArtifactBuilderLayout>);
 
-        expect(document.getElementById("toolbar-program-title-portal")).toBeTruthy();
+        expect(document.getElementById("toolbar-nav-portal")).toBeTruthy();
         expect(document.getElementById("toolbar-actions-portal")).toBeTruthy();
     });
 });

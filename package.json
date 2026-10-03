@@ -15,7 +15,10 @@
     "test:ci": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:db-smoke": "./scripts/run-db-smoke.sh",
-    "openapi:generate": "next-openapi-gen generate"
+    "openapi:generate": "next-openapi-gen generate",
+    "voice:dev": "tsx src/voice/worker.ts dev",
+    "voice:worker": "node scripts/run-voice-worker.mjs",
+    "voice:eval": "tsx scripts/eval-voice.ts"
   },
   "lint-staged": {
     "*.{ts,tsx,js}": [
@@ -31,6 +34,11 @@
     "@hookform/resolvers": "^4.1.3",
     "@langfuse/otel": "^4.5.1",
     "@langfuse/tracing": "^4.5.1",
+    "@livekit/agents": "^1.9.1",
+    "@livekit/agents-plugin-deepgram": "^1.9.1",
+    "@livekit/agents-plugin-elevenlabs": "^1.9.1",
+    "@livekit/agents-plugin-silero": "^1.9.1",
+    "@livekit/rtc-node": "^1.1.0",
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
     "@next/mdx": "16.1.3",
@@ -87,6 +95,7 @@
     "graphql": "^16.10.0",
     "humanize-duration": "^3.32.1",
     "husky": "^9.1.7",
+    "livekit-server-sdk": "^2.19.1",
     "lucide-react": "^0.469.0",
     "marked": "^16.0.0",
     "motion": "^11.18.2",
@@ -116,6 +125,7 @@
     "slick-carousel": "^1.8.1",
     "sonner": "^2.0.1",
     "streamdown": "^2.4.0",
+    "stripe": "^23.0.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "tokenlens": "^1.3.1",
@@ -160,6 +170,7 @@
     "postcss": "^8.4.49",
     "supabase": "^2.119.0",
     "tailwindcss": "^4.2.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.27.0",
     "vite-tsconfig-paths": "^6.0.4",
