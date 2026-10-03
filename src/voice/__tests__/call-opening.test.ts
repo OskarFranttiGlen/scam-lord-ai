@@ -117,6 +117,12 @@ describe("voice call instructions", () => {
         expect(prompt).not.toMatch(/CHECK-IN FIRST/);
     });
 
+    it("does not take a bare hello as the tenant confirming who they are", () => {
+        const prompt = buildNegotiationInstructions(getDemoCallContext(), true, "voice");
+
+        expect(prompt).toContain(`A bare "hi" or "hello" is not a confirmation: ask "Is this John?" again.`);
+    });
+
     it("covers the test lines: who is this, why are you calling, back to the repair, pay when fixed", () => {
         const prompt = buildNegotiationInstructions(getDemoCallContext(), true, "voice");
 

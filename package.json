@@ -38,6 +38,7 @@
     "@livekit/agents-plugin-deepgram": "^1.9.1",
     "@livekit/agents-plugin-elevenlabs": "^1.9.1",
     "@livekit/agents-plugin-silero": "^1.9.1",
+    "@livekit/noise-cancellation-node": "^0.3.0",
     "@livekit/rtc-node": "^1.1.0",
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",

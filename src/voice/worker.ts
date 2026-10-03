@@ -42,6 +42,7 @@ import {
 import * as deepgram from "@livekit/agents-plugin-deepgram";
 import * as elevenlabs from "@livekit/agents-plugin-elevenlabs";
 import * as silero from "@livekit/agents-plugin-silero";
+import { TelephonyBackgroundVoiceCancellation } from "@livekit/noise-cancellation-node";
 import { RoomEvent, type Participant, type RemoteParticipant } from "@livekit/rtc-node";
 import { fileURLToPath } from "node:url";
 
@@ -71,6 +72,9 @@ const LIVEKIT_ENV_KEYS = ["LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"
 
 /** "Mia - Warm, approachable & natural" (ElevenLabs shared library; must be added to the account's voices). */
 const DEFAULT_ELEVEN_VOICE_ID = "cr0sIcub5EqRc36Kj15s";
+
+/** Strips other voices in the room (TV, office, PA) so only the caller can interrupt. Needs LiveKit Cloud. */
+const TENANT_INPUT = { noiseCancellation: TelephonyBackgroundVoiceCancellation() };
 
 /** Pause after an unknown caller's closing line before the room (and phone call) is ended. */
 const UNKNOWN_CALLER_HANGUP_DELAY_MS = 800;
@@ -278,18 +282,21 @@ function createVoiceSession(ctx: JobContext): voice.AgentSession {
             language: "en",
             punctuate: true,
             smartFormat: true,
+            // A trailing "um" tells the turn detector the tenant is mid-thought, not done.
+            fillerWords: true,
         }),
         tts: new elevenlabs.TTS({
             voiceId: process.env.ELEVEN_VOICE_ID?.trim() || DEFAULT_ELEVEN_VOICE_ID,
             // Flash garbled shared-library voices (dropped and slurred words) on calls.
             model: process.env.ELEVEN_MODEL?.trim() || "eleven_turbo_v2_5",
-            // High stability: the voice was cloned from casual speech and otherwise adds ums and breaths.
-            voiceSettings: { stability: 0.85, similarity_boost: 0.7, style: 0, use_speaker_boost: true },
+            // Mia's recommended settings, slowed a little for phone calls.
+            voiceSettings: { stability: 0.5, similarity_boost: 0.75, style: 0, use_speaker_boost: true, speed: 0.9 },
             wordTokenizer: new ChunkSentenceTokenizer(),
         }),
         turnHandling: {
             turnDetection: useVadTurns ? "vad" : new inference.TurnDetector(),
-            endpointing: useVadTurns ? { minDelay: 450, maxDelay: 2000 } : { minDelay: 300, maxDelay: 2000 },
+            // Tenants pause mid-sentence ("um"); replying after 300 ms made them talk over the reply.
+            endpointing: useVadTurns ? { minDelay: 800, maxDelay: 3000 } : { minDelay: 700, maxDelay: 3000 },
             // Uninterruptible replies made every answer land one turn late, so real replies interrupt.
             // Only transcribed words count (two or more): adaptive mode and false-interruption pausing
             // both paused the reply on an "uhh" or line noise and chopped it.
@@ -362,7 +369,7 @@ async function answerCallback(ctx: JobContext, roomName: string, startedAt: Date
             }, UNKNOWN_CALLER_HANGUP_DELAY_MS);
         });
         attachLatencyLog(session);
-        await session.start({ agent, room: ctx.room });
+        await session.start({ agent, room: ctx.room, inputOptions: TENANT_INPUT });
         session.say(UNKNOWN_CALLER_GREETING);
         return;
     }
@@ -406,7 +413,7 @@ async function answerCallback(ctx: JobContext, roomName: string, startedAt: Date
         priorConversation,
     });
     attachLatencyLog(session, agent);
-    await session.start({ agent, room: ctx.room });
+    await session.start({ agent, room: ctx.room, inputOptions: TENANT_INPUT });
     hangUpAfterGoodbye(ctx, session, callState);
     const stopPaymentWatch = startPaymentWatch(callContext, callState, session);
     if (stopPaymentWatch) {
@@ -480,7 +487,7 @@ export default defineAgent({
             return;
         }
 
-        await session.start({ agent, room: ctx.room });
+        await session.start({ agent, room: ctx.room, inputOptions: TENANT_INPUT });
         hangUpAfterGoodbye(ctx, session, callState);
         const stopPaymentWatch = startPaymentWatch(callContext, callState, session);
         if (stopPaymentWatch) {

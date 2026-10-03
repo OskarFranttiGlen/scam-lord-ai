@@ -29,4 +29,18 @@ describe("ChunkSentenceTokenizer", () => {
 
         expect(tokens).toEqual(["You can pay nine hundred twenty dollars today.", "Does that work?"]);
     });
+
+    it("keeps the closing punctuation with its sentence when the markdown filter splits it off", async () => {
+        const stream = new ChunkSentenceTokenizer().stream();
+
+        stream.pushText(" Can you take care of it today");
+        stream.pushText("?");
+        stream.endInput();
+        const tokens: string[] = [];
+        for await (const data of stream) {
+            tokens.push(data.token);
+        }
+
+        expect(tokens).toEqual(["Can you take care of it today?"]);
+    });
 });
