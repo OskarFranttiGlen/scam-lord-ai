@@ -68,4 +68,4 @@ Build 1 and 2 properly. Add 4 if time allows. 3 and 5 can be thin or left as the
 
 ## What Supabase still owns
 
-Stripe holds invoices, schedules, credit notes, and payouts. Supabase holds what Stripe does not: properties, units, tenancy contact details, landlord policy, perks, call transcripts, and Jev scores. Each tenancy stores the tenant’s Stripe customer id. Each landlord stores two Stripe ids: the customer we bill for usage, and the connected account that receives rent.
+Stripe holds invoices, schedules, credit notes, and payouts. Supabase holds what Stripe does not: properties, units, tenancy contact details, landlord policy, perks, call transcripts, and Jev scores. The portfolio rows sync from the property manager’s PMS. The demo seeds them in Supabase instead. Each tenancy stores the tenant’s Stripe customer id. Each landlord stores two Stripe ids: the customer we bill for usage, and the connected account that receives rent.

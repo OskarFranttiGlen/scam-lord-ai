@@ -1,6 +1,6 @@
 # Architecture
 
-Stripe is the money system. An overdue or failed invoice starts the call, across every property, with no one pressing a button. The negotiation brain is a Vercel `ToolLoopAgent` with Claude as the model, and it operates Stripe through the Agent Toolkit during the call. Jev, a System One model, is the low-latency decision model. It gives the agent better judgment from constraints we pre-define. Numeric landlord limits stay in plain code. A Vercel `WorkflowAgent` starts the call from the Stripe event and also waits on payment or a human handoff. Supabase holds the property context Stripe does not. Details are in [Stripe](stripe.md) and [Property system](pms.md).
+Stripe is the money system. An overdue or failed invoice starts the call, across every property, with no one pressing a button. The negotiation brain is a Vercel `ToolLoopAgent` with Claude as the model, and it operates Stripe through the Agent Toolkit during the call. Jev, a System One model, is the low-latency decision model. It gives the agent better judgment from constraints we pre-define. Numeric landlord limits stay in plain code. A Vercel `WorkflowAgent` starts the call from the Stripe event and also waits on payment or a human handoff. Supabase holds the property context Stripe does not. That portfolio syncs from the property manager’s PMS. The demo seeds the same tables. Details are in [Stripe](stripe.md) and [Property system](pms.md).
 
 ## Responsibilities
 

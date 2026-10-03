@@ -1,6 +1,8 @@
 # Property system
 
-ScamLord AI is its own property management system for a portfolio, not one building. Supabase holds the basic records the agent needs to place a call and stay inside the landlord’s limits. Stripe holds the money: invoices, installment schedules, credit notes, and payouts. See [Stripe](stripe.md).
+ScamLord AI is the collection layer on top of a property manager’s existing system. It keeps the slice of that portfolio the agent needs: landlords, properties, units, and tenancies. In production those rows sync from their PMS. For the demo they are seeded in Supabase, with no live connector. Stripe holds the money: invoices, installment schedules, credit notes, and payouts. See [Stripe](stripe.md).
+
+Policy limits and perks are ours. They are set on the dashboard, not copied from the PMS.
 
 The dashboard and the agents run on Vercel. LiveKit still carries the phone audio. Both read and write the same Supabase project.
 
@@ -24,10 +26,10 @@ All of these live in Supabase Postgres. Row level security is on. The landlord�
 
 | Table | What it stores | Who writes it |
 | --- | --- | --- |
-| `landlords` | Name, phone, link to `auth.users`, Stripe customer id (usage billing), Stripe connected account id (rent payouts) | Signup, Connect onboarding |
-| `properties` | Name, address, `landlord_id` | Landlord |
-| `units` | Label, `property_id` | Landlord |
-| `tenancies` | Tenant name, phone, email, language, `unit_id`, Stripe customer id | Landlord |
+| `landlords` | Name, phone, link to `auth.users`, Stripe customer id (usage billing), Stripe connected account id (rent payouts), external PMS id | PMS sync. Demo: seeded |
+| `properties` | Name, address, `landlord_id`, external PMS id | PMS sync. Demo: seeded |
+| `units` | Label, `property_id`, external PMS id | PMS sync. Demo: seeded |
+| `tenancies` | Tenant name, phone, email, language, `unit_id`, Stripe customer id, external PMS id | PMS sync. Demo: seeded |
 | `policies` | `max_installments`, `grace_days`, `fee_waiver_cap`, one row per landlord | Landlord settings screen |
 | `perks` | A landlord-written sweetener and when it applies. Example: “We’ll mow the lawn this weekend” if they pay the open balance today | Landlord |
 | `calls` | Tenancy, Stripe invoice id, status, transcript, Jev probabilities, handoff reason | Voice agent, started by a Stripe event |
