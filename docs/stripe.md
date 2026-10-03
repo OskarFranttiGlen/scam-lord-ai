@@ -46,9 +46,15 @@ When there is time past the hackathon core:
 
 Two different Stripe flows.
 
-**We charge the landlord for usage.** Each property manager we onboard brings one or more landlords. Each landlord is a Stripe customer with a payment method on file. Pricing is pay-per-use through the [Machine Payments Protocol](https://docs.stripe.com/payments/machine): every agent action on that landlord’s portfolio is a priced request, and Stripe settles it. There is no flat subscription. A landlord with more properties, more overdue invoices, and more calls pays more, because that is the usage.
+**We charge the landlord for outcomes, metered as usage.** Each property manager we onboard brings one or more landlords. Each landlord is a Stripe customer with a payment method on file. There is no seat fee. The bill follows the work that recovers rent, which is the outcomes-based model: a current portfolio costs nothing, and a landlord with more overdue accounts pays more because more outcomes happened.
 
-An agent action is a tool or inference on their behalf: starting the call, a Jev check, a Stripe write, sending the link. The call row records which landlord the meter event belongs to.
+The [Machine Payments Protocol](https://docs.stripe.com/payments/machine) settles each outcome as a priced request. The outcomes we count:
+
+- The agent takes an overdue invoice and places the call
+- The tenant accepts a plan
+- The payment clears
+
+A Jev check or a tool call inside the turn is not its own charge. The call row records which landlord the outcome belongs to.
 
 **We collect the rent on the landlord’s behalf.** Each landlord is a connected account (Accounts v2). The tenant pays through our checkout. That payment is a destination charge: we are the merchant of record, and Stripe transfers the rent to that landlord’s connected account when it succeeds. We do not keep a cut of the rent. The usage charge above is a separate bill to the landlord.
 

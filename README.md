@@ -51,7 +51,7 @@ Payout ──► landlord’s Stripe connected account
 
 ## Specs
 
-- [Stripe](docs/stripe.md) — events start the call, the agent writes the plan in Stripe, each landlord is billed for usage
+- [Stripe](docs/stripe.md) — events start the call, the agent writes the plan in Stripe, each landlord is billed for collection outcomes
 - [Property system](docs/pms.md) — Supabase records and the Vercel agents
 - [Architecture](docs/architecture.md) — who decides what on a call
 - [Safeguards](docs/safeguards.md) — code policy, Jev decisions, human handoff, Gemini
