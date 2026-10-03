@@ -11,7 +11,9 @@ function reader(data: unknown[] | null, error: { message: string } | null = null
     const mock: unknown = {
         from: () => ({
             select: () => ({
-                order: async () => ({ data, error }),
+                order: () => ({
+                    overrideTypes: async () => ({ data, error }),
+                }),
             }),
         }),
     };

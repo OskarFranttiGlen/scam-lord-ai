@@ -12,7 +12,9 @@ function reader(data: unknown[]): SupabaseClient {
     const mock: unknown = {
         from: () => ({
             select: () => ({
-                order: async () => ({ data, error: null }),
+                order: () => ({
+                    overrideTypes: async () => ({ data, error: null }),
+                }),
             }),
         }),
     };
