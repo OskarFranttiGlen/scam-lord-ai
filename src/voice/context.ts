@@ -112,6 +112,8 @@ export type CallState = {
     paymentLinkUrl?: string;
     /** Stripe invoice the tenant pays first; confirm_payment checks it. */
     paymentInvoiceId?: string;
+    /** Stripe says the tenant's payment landed (payment-watch or confirm_payment). */
+    paymentConfirmed: boolean;
     /** The check-in happened (answered or declined); policy and payment tools stay locked until then. */
     feedbackRecorded: boolean;
     /** Check-in answer, or `declined`. */
@@ -141,6 +143,7 @@ export function createInitialCallState(): CallState {
         jevChecks: [],
         handoffActive: false,
         paymentLinkSent: false,
+        paymentConfirmed: false,
         feedbackRecorded: false,
         maintenanceReports: [],
         urgentMaintenance: false,
@@ -191,6 +194,7 @@ export function normalizeCallState(value: unknown): CallState {
         handoffActive: Boolean(raw.handoffActive),
         acceptedPlan: raw.acceptedPlan,
         paymentLinkSent: Boolean(raw.paymentLinkSent),
+        paymentConfirmed: Boolean(raw.paymentConfirmed),
         paymentLinkUrl: typeof raw.paymentLinkUrl === "string" ? raw.paymentLinkUrl : undefined,
         paymentInvoiceId: typeof raw.paymentInvoiceId === "string" ? raw.paymentInvoiceId : undefined,
         feedbackRecorded: Boolean(raw.feedbackRecorded),

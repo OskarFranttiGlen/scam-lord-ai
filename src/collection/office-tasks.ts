@@ -19,6 +19,7 @@ export const OFFICE_TASK_TYPES = [
     "lease_change",
     "tenancy_at_risk",
     "missed_promises",
+    "due_date_change",
 ] as const;
 
 export type TOfficeTaskType = (typeof OFFICE_TASK_TYPES)[number];

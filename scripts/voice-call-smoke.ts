@@ -59,7 +59,7 @@ type TLineResult = {
 };
 
 const TENANT_LINES: TTenantLine[] = [
-    { text: "Yeah this is Jordan. I can pay half next Friday." },
+    { text: "Yeah this is John. I can pay half next Friday." },
     { text: "I lost my job last week, so money is really tight right now." },
     { text: "Sorry, wait, hold on. Can you just text me the payment link?", bargeIn: true },
 ];
@@ -202,7 +202,7 @@ async function main(): Promise<void> {
     const rooms = new RoomServiceClient(url.replace(/^ws/, "http"), apiKey, apiSecret);
     await rooms.createRoom({ name: roomName, emptyTimeout: 60 });
 
-    const token = new AccessToken(apiKey, apiSecret, { identity: "tenant-smoke", name: "Jordan (smoke)" });
+    const token = new AccessToken(apiKey, apiSecret, { identity: "tenant-smoke", name: "John (smoke)" });
     token.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true });
 
     const room = new Room();

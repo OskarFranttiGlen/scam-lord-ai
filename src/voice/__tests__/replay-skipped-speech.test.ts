@@ -22,6 +22,7 @@ function fakeSession() {
         user: (newState: string) => emitter.emit(E.UserStateChanged, { newState }),
         heard: (transcript: string, isFinal = true) => emitter.emit(E.UserInputTranscribed, { transcript, isFinal }),
         committed: (role = "user") => emitter.emit(E.ConversationItemAdded, { item: { type: "message", role } }),
+        said: (text: string) => emitter.emit(E.ConversationItemAdded, { item: { type: "message", role: "assistant", textContent: text } }),
     };
 }
 
@@ -115,7 +116,23 @@ describe("replaySkippedSpeech", () => {
         expect(s.generateReply).not.toHaveBeenCalled();
     });
 
-    it("only covers the greeting, not later replies", () => {
+    it("answers a one-word reply to a later question", () => {
+        const s = fakeSession();
+        replaySkippedSpeech(s.session);
+
+        s.agent("speaking");
+        s.agent("listening");
+        s.agent("thinking");
+        s.agent("speaking");
+        s.heard("Yes.");
+        s.agent("listening");
+        s.said("Is that a yes? I'll send the link now.");
+        vi.advanceTimersByTime(REPLAY_DELAY_MS);
+
+        expect(s.generateReply).toHaveBeenCalledWith({ userInput: "Yes." });
+    });
+
+    it("ignores short speech over a later reply that asked nothing", () => {
         const s = fakeSession();
         replaySkippedSpeech(s.session);
 
@@ -125,6 +142,7 @@ describe("replaySkippedSpeech", () => {
         s.agent("speaking");
         s.heard("Yeah.");
         s.agent("listening");
+        s.said("It's on your phone.");
         vi.advanceTimersByTime(REPLAY_DELAY_MS);
 
         expect(s.generateReply).not.toHaveBeenCalled();

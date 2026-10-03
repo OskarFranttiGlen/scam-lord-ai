@@ -13,7 +13,7 @@ function storedInvoice(overrides: Record<string, unknown> = {}) {
     return {
         id: "in_stored",
         status: "open",
-        amount_remaining: 184000,
+        amount_remaining: 240000,
         metadata: {},
         ...overrides,
     };
@@ -43,7 +43,7 @@ function seedMock(input: TSeedMockInput = {}) {
     const finalizeInvoice = vi.fn(async (id: string) => ({
         id,
         status: "open",
-        amount_remaining: 184000,
+        amount_remaining: 240000,
     }));
     const stripe = {
         invoices: { retrieve, create: invoicesCreate, finalizeInvoice },
@@ -169,8 +169,8 @@ describe("ensureOpenDemoInvoice", () => {
         });
 
         expect(m.customersCreate).toHaveBeenCalledWith({
-            name: "Jordan Lee",
-            email: "jordan.lee@example.com",
+            name: "John Reyes",
+            email: "john.reyes@example.com",
             phone: "+15555550102",
             metadata: { scamlord_demo_tenant: "true" },
         });
@@ -194,14 +194,14 @@ describe("ensureOpenDemoInvoice", () => {
             due_date: now.getTime() / 1000 + 3600,
             auto_advance: false,
             pending_invoice_items_behavior: "exclude",
-            description: "Maple Court rent, Unit 2B",
+            description: "Sunset Apartments rent, Unit 4",
         }));
         expect(m.invoiceItemsCreate).toHaveBeenCalledWith(expect.objectContaining({
             customer: "cus_demo",
             invoice: "in_draft",
-            amount: 184000,
+            amount: 240000,
             currency: "usd",
-            description: "September rent, Unit 2B",
+            description: "October rent, Unit 4",
         }));
         expect(m.finalizeInvoice).toHaveBeenCalledWith("in_draft", { auto_advance: false });
     });

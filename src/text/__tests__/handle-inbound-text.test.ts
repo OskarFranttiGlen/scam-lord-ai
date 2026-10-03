@@ -57,7 +57,7 @@ beforeEach(() => {
     vi.mocked(runVoiceTurn).mockImplementation(async ({ userText, messages = [], state }) => {
         state.transcriptLines.push(`Tenant: ${userText}`, "Agent: reply");
         return {
-            assistantText: "Hi, this is an AI assistant for Maple Court. You owe $1,840.",
+            assistantText: "Hi, this is an AI assistant for Sunset Apartments. You owe $2,400.",
             messages: [...messages, { role: "user", content: userText }, { role: "assistant", content: "reply" }],
             state,
         };
@@ -112,7 +112,7 @@ describe("handleInboundText", () => {
             state: expect.objectContaining({ transcriptLines: ["Tenant: who is this?", "Agent: reply"] }),
             messageSid: "SM123",
         });
-        expect(result.reply).toBe("Hi, this is an AI assistant for Maple Court. You owe $1,840.");
+        expect(result.reply).toBe("Hi, this is an AI assistant for Sunset Apartments. You owe $2,400.");
     });
 
     it("runs the turn in handoff mode when a call already handed off", async () => {

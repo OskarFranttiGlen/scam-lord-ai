@@ -8,7 +8,7 @@ import { buildCallbackGreeting } from "../livekit-agent";
 import { getCollectionTools } from "../tools";
 
 const TOOL_OPTIONS = { toolCallId: "call_1", messages: [], context: {} };
-const TODAY_PLAN = { installments: [{ date: new Date().toISOString().slice(0, 10), amount: 1840 }] };
+const TODAY_PLAN = { installments: [{ date: new Date().toISOString().slice(0, 10), amount: 2400 }] };
 
 function context(overrides: Partial<CallContext> = {}): CallContext {
     return { ...getDemoCallContext(), maintenanceRequests: [], ...overrides };

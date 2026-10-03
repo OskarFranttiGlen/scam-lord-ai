@@ -1,8 +1,8 @@
 /**
  * @module scripts/seed-stripe-demo
  *
- * Prints a finalized, open Stripe test invoice for the demo tenancy (Jordan Lee, Maple Court,
- * $1840) so `accept_plan` writes real installment invoices instead of falling back to Checkout.
+ * Prints a finalized, open Stripe test invoice for the demo tenancy (John Reyes, Sunset Apartments,
+ * $2400) so `accept_plan` writes real installment invoices instead of falling back to Checkout.
  * Reuses the stored `DEMO_STRIPE_INVOICE_ID` while it is still payable and re-seeds otherwise,
  * because writing a plan closes the previous invoice. Refuses to run against a live key.
  *

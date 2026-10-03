@@ -320,6 +320,93 @@ function buildPayInFullRule(ctx: CallContext): string {
 }
 
 /**
+ * PIN "SOON": a vague promise is never a plan; pin it to a date and find the cause.
+ */
+function buildPinSoonRule(): string {
+    return [
+        'PIN "SOON":',
+        '- A vague promise ("soon", "later", "next week", "when I can") is never agreement; never accept a vague '
+            + "promise or call accept_plan on one.",
+        '- Reply exactly: "Let\'s make \'soon\' a date. Is the money not there, or does it arrive at the wrong '
+            + 'time of the month?" and nothing else in that reply.',
+    ].join("\n");
+}
+
+/**
+ * PAYDAY PLAN: timing is the cause, so offer half today and half the day after payday.
+ *
+ * @param ctx - Call context (for the installment limit in words)
+ * @param channel - voice or text (spells the limit differently)
+ */
+function buildPaydayPlanRule(ctx: CallContext, channel: TConversationChannel): string {
+    const max = CHANNEL_FORMAT[channel].count(ctx.policy.maxInstallments);
+    const maxSentenceStart = max.charAt(0).toUpperCase() + max.slice(1);
+    return [
+        "PAYDAY PLAN:",
+        "- If the cause is timing (payday moved, or the money arrives at the wrong time of the month), propose "
+            + "half today and half the day after they are paid.",
+        "- Take the second date from the allowed dates list: the day after payday when it is on the list, "
+            + "otherwise the latest allowed date. Check the plan with check_policy before you say it.",
+        `- If they ask for more payments than allowed, say exactly: "${maxSentenceStart} is the most I can offer." `
+            + "Do not call a tool in that reply; the plan already offered is unchanged and they have not agreed "
+            + "to it yet.",
+    ].join("\n");
+}
+
+/**
+ * HALF-YES: a hedge is not a clear yes, so confirm before the link goes out.
+ */
+function buildHalfYesRule(): string {
+    return [
+        "HALF-YES:",
+        '- "OK I guess", "I suppose", "maybe", or a reluctant "fine" is a hedge, not a clear yes: never call '
+            + "accept_plan on it and call no tool in that reply.",
+        '- Reply exactly: "Is that a yes? I\'ll send the link now."',
+        "- Only a clear yes (\"yes\", \"yeah\", \"sure\", \"deal\") after that question means agreement. A question "
+            + "or a condition (more payments, different dates) is not agreement either; answer it and wait.",
+        "- PAYING IN FULL is unchanged: a clear yes to the full balance or a request for the link is accepted "
+            + "right away.",
+    ].join("\n");
+}
+
+/**
+ * The spoken due-date-change offer: "Want me to ask {manager} to move your due date to the
+ * {day}, so this stops happening?"
+ *
+ * @param ctx - Call context
+ * @param dayLabel - The requested day as it is spoken, e.g. "sixteenth"
+ */
+export function buildDueDateOffer(ctx: CallContext, dayLabel: string): string {
+    return `Want me to ask ${managerLabel(ctx)} to move your due date to the ${dayLabel}, so this stops happening?`;
+}
+
+/**
+ * DUE DATE CHANGE: once a payment is confirmed and the tenant said when they are paid, offer
+ * to move the rent due date, then hand it to the office and end the call.
+ *
+ * @param ctx - Call context
+ * @param channel - voice or text
+ */
+function buildDueDateChangeRule(ctx: CallContext, channel: TConversationChannel): string {
+    const firstName = ctx.tenantName.split(/\s+/)[0];
+    const offer = buildDueDateOffer(ctx, "{day}");
+    const close = channel === "voice"
+        ? `say exactly "Done. Thanks, ${firstName}." and call end_call in the same reply.`
+        : `then say exactly "Done. Thanks, ${firstName}."`;
+    return [
+        "DUE DATE CHANGE:",
+        "- Once a payment is confirmed (confirm_payment says it went through, the call state marks the payment "
+            + "confirmed, or a system note says a payment was received) and the tenant told you when they are "
+            + `paid, offer exactly: "${offer}"`,
+        "- Replace {day} with the day after payday in words (pay on the fifteenth → \"the sixteenth\"); never say "
+            + "the phrase \"day after payday\" to the tenant.",
+        "- When they say yes: call create_office_task with due_date_change and the payday and requested due date "
+            + `in details, ${close}`,
+        "- If they say no, just thank them" + (channel === "voice" ? " and end the call." : "."),
+    ].join("\n");
+}
+
+/**
  * Voice-only rules for the fixed call opening and the scripted answers around it.
  *
  * @param ctx - Call context
@@ -467,6 +554,12 @@ export function buildNegotiationInstructions(
         "",
         buildPayInFullRule(ctx),
         "",
+        buildPinSoonRule(),
+        "",
+        buildPaydayPlanRule(ctx, channel),
+        "",
+        buildDueDateChangeRule(ctx, channel),
+        "",
         "NEGOTIATION:",
         "1. You cannot waive fees, move dates, split payments, or promise anything beyond what check_policy accepts.",
         "2. Before you state any plan, including your own counter-offer, call check_policy with dates from the "
@@ -479,8 +572,12 @@ export function buildNegotiationInstructions(
             + "counter, say plainly what is not possible (for example more payments than allowed, or a waiver above the cap).",
         "4. When the tenant clearly agrees to a plan check_policy accepted, or commits to paying the full balance "
             + "today, call accept_plan right away with that exact plan (add the perk only for full payment today); "
-            + `it re-checks policy itself, so do not call check_policy first. ${acceptEffect}`,
-        "5. Never call accept_plan for terms the tenant has not agreed to.",
+            + `it re-checks policy itself, so do not call check_policy first. A hedge ("OK I guess", "I suppose", `
+            + '"maybe", a grudging "fine") is never clear agreement: follow HALF-YES instead. '
+            + `${acceptEffect}`,
+        "5. Never call accept_plan for terms the tenant has not agreed to, and never on a hedge (\"OK I guess\", "
+            + '"I suppose", "maybe", a grudging "fine"): reply only "Is that a yes? I\'ll send the link now." '
+            + "and wait for a clear yes (see HALF-YES).",
         "6. Only say a payment went through when confirm_payment says so.",
         "7. If the tenant mentions hardship, a dispute, or distress, do not push; say someone from the property "
             + "will follow up.",
@@ -489,6 +586,8 @@ export function buildNegotiationInstructions(
             + "wrong (disputed_line), a program like Section 8 pays part (tenant_portion), they gave notice and ask "
             + "about the deposit (move_out_deposit), or they say a manager agreed something you have no record of "
             + "(confirm_claim; the balance still stands).",
+        "",
+        buildHalfYesRule(),
         "",
         buildCallFacts(ctx, channel),
     ].join("\n");
@@ -591,6 +690,7 @@ export function buildPlaybookInstructions(
         buildOpeningRules(ctx, channel, feedbackRecorded),
         buildFollowUpRules(ctx, channel),
         buildPayInFullRule(ctx),
+        buildDueDateChangeRule(ctx, channel),
         buildCallFacts(ctx, channel),
     ];
     const scripts: Record<typeof playbook, string[]> = {

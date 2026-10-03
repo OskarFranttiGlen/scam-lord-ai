@@ -22,7 +22,7 @@ const MONTHS = [
  *
  * @param isoMonth - Date string starting with YYYY-MM
  */
-function monthName(isoMonth: string): string {
+export function monthName(isoMonth: string): string {
     return MONTHS[Number(isoMonth.slice(5, 7)) - 1] ?? isoMonth;
 }
 
@@ -67,7 +67,7 @@ export function buildRentOpening(ctx: CallContext): string {
         request => request.status !== "resolved" && request.appointmentLabel?.trim(),
     );
     const repair = booked
-        ? `Quick update first: your ${booked.description.charAt(0).toLowerCase()}${booked.description.slice(1)} `
+        ? `Your ${booked.description.charAt(0).toLowerCase()}${booked.description.slice(1)} `
             + `is booked for ${booked.appointmentLabel?.trim()}. `
         : "";
     return `${repair}The main reason I'm calling is your rent. ${buildLedgerLine(ctx)} Can you take care of it today?`;

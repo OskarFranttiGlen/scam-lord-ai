@@ -10,24 +10,23 @@ import { getCollectionTools } from "../tools";
 function context(overrides: Partial<CallContext> = {}): CallContext {
     return {
         ...getDemoCallContext(),
-        managerName: "Maple Court Property Management",
         maintenanceRequests: [],
         ...overrides,
     };
 }
 
-const month = (m: string, status: TLedgerMonth["status"], amount = 1840): TLedgerMonth => ({ month: m, amount, status });
+const month = (m: string, status: TLedgerMonth["status"], amount = 2400): TLedgerMonth => ({ month: m, amount, status });
 
 describe("buildOpeningGreeting", () => {
     it("asks for the tenant by first name and introduces itself as Mia from the manager, with no amount", () => {
         const greeting = buildOpeningGreeting(context());
 
-        expect(greeting).toBe("Hi, is this Jordan? It's Mia from Maple Court Property Management.");
+        expect(greeting).toBe("Hi, is this John? It's Mia from Sunset Properties.");
         expect(greeting).not.toMatch(/dollar|\d/i);
     });
 
     it("falls back to the property name when no manager name is known", () => {
-        expect(buildOpeningGreeting(context({ managerName: undefined }))).toContain("Mia from Maple Court.");
+        expect(buildOpeningGreeting(context({ managerName: undefined }))).toContain("Mia from Sunset Apartments.");
     });
 });
 
@@ -36,27 +35,27 @@ describe("buildLedgerLine", () => {
         const ledger = [month("2026-09", "unpaid"), month("2026-08", "late"), month("2026-07", "late")];
 
         expect(buildLedgerLine(context({ ledger }))).toBe(
-            "September's eighteen hundred forty dollars is unpaid, and July and August both came in late.",
+            "September's twenty-four hundred dollars is unpaid, and July and August both came in late.",
         );
     });
 
     it("says how far back an unpaid balance goes when more than one month is unpaid (carried over)", () => {
-        const ledger = [month("2026-09", "unpaid", 920), month("2026-08", "unpaid", 920)];
+        const ledger = [month("2026-09", "unpaid", 1200), month("2026-08", "unpaid", 1200)];
 
         expect(buildLedgerLine(context({ ledger }))).toBe(
-            "There's eighteen hundred forty dollars unpaid going back to August.",
+            "There's twenty-four hundred dollars unpaid going back to August.",
         );
     });
 
     it("uses the plain line when only one prior month was late (first time)", () => {
         const ledger = [month("2026-09", "unpaid"), month("2026-08", "late"), month("2026-07", "on_time")];
 
-        expect(buildLedgerLine(context({ ledger }))).toBe("September's eighteen hundred forty dollars is unpaid.");
+        expect(buildLedgerLine(context({ ledger }))).toBe("September's twenty-four hundred dollars is unpaid.");
     });
 
     it("uses the invoice due month when there is no ledger", () => {
         expect(buildLedgerLine(context({ ledger: undefined }))).toBe(
-            "September's eighteen hundred forty dollars is unpaid.",
+            "October's twenty-four hundred dollars is unpaid.",
         );
     });
 });
@@ -66,19 +65,19 @@ describe("buildRentOpening", () => {
         const opening = buildRentOpening(context({
             ledger: [month("2026-09", "unpaid")],
             maintenanceRequests: [{
-                description: "Kitchen tap repair",
+                description: "Tap repair",
                 status: "scheduled",
                 urgency: "routine",
                 reportedAt: "2026-09-20T00:00:00.000Z",
                 resolvedAt: null,
-                appointmentLabel: "Thursday morning",
+                appointmentLabel: "Thursday",
             }],
         }));
 
         expect(opening).toBe(
-            "Quick update first: your kitchen tap repair is booked for Thursday morning. "
+            "Your tap repair is booked for Thursday. "
             + "The main reason I'm calling is your rent. "
-            + "September's eighteen hundred forty dollars is unpaid. "
+            + "September's twenty-four hundred dollars is unpaid. "
             + "Can you take care of it today?",
         );
     });
@@ -96,7 +95,7 @@ describe("buildRentOpening", () => {
         }));
 
         expect(opening).toBe(
-            "The main reason I'm calling is your rent. September's eighteen hundred forty dollars is unpaid. "
+            "The main reason I'm calling is your rent. September's twenty-four hundred dollars is unpaid. "
             + "Can you take care of it today?",
         );
     });
@@ -108,7 +107,7 @@ describe("buildRentOpening", () => {
 
 describe("voice call instructions", () => {
     const TOOL_OPTIONS = { toolCallId: "call_1", messages: [], context: {} };
-    const TODAY_PLAN = { installments: [{ date: new Date().toISOString().slice(0, 10), amount: 1840 }] };
+    const TODAY_PLAN = { installments: [{ date: new Date().toISOString().slice(0, 10), amount: 2400 }] };
 
     it("has the agent say the rent opening word for word once the tenant confirms, with no check-in", () => {
         const ctx = getDemoCallContext();
@@ -121,9 +120,9 @@ describe("voice call instructions", () => {
     it("covers the test lines: who is this, why are you calling, back to the repair, pay when fixed", () => {
         const prompt = buildNegotiationInstructions(getDemoCallContext(), true, "voice");
 
-        expect(prompt).toContain("It's Mia from Maple Court Property Management. The main reason I'm calling is your rent.");
-        expect(prompt).toContain("About your rent: eighteen hundred forty dollars is unpaid. Can you take care of it today?");
-        expect(prompt).toContain("That's booked either way. Now, about the eighteen hundred forty dollars.");
+        expect(prompt).toContain("It's Mia from Sunset Properties. The main reason I'm calling is your rent.");
+        expect(prompt).toContain("About your rent: twenty-four hundred dollars is unpaid. Can you take care of it today?");
+        expect(prompt).toContain("That's booked either way. Now, about the twenty-four hundred dollars.");
         expect(prompt).toMatch(/pay once a repair is fixed[^\n]*urgent_repair/);
         expect(prompt).toMatch(/Never mention eviction, credit reporting, or legal action/);
     });
@@ -183,7 +182,7 @@ describe("paying in full", () => {
     it.each(Object.entries(prompts))("%s: a yes, paying it all, or asking for the link goes straight to accept_plan", (_, prompt) => {
         expect(prompt).toMatch(/PAYING IN FULL/);
         expect(prompt).toMatch(/asks? for the payment link/);
-        expect(prompt).toMatch(/call accept_plan right away with one payment of 1840 due today/);
+        expect(prompt).toMatch(/call accept_plan right away with one payment of 2400 due today/);
         expect(prompt).toMatch(/Do not ask for an amount, offer a plan, or call check_policy first/);
     });
 });

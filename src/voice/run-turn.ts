@@ -36,7 +36,7 @@ type TSignalInputs = Pick<TCollectionVoiceAgent, "signalConstraints" | "signalMa
 
 /** Spoken right away when a slow tool starts before any reply text, so the line is not silent. */
 export const POLICY_CHECK_FILLER = "Let me check that.";
-const FILLER_TOOLS = new Set(["check_policy", "confirm_payment"]);
+const FILLER_TOOLS = new Set(["confirm_payment"]);
 
 /** The subset of AI SDK stream parts the voice turn reads. */
 export type TBrainStreamPart = { type: string; text?: string; toolName?: string };
@@ -112,6 +112,23 @@ function finalToolSay(steps: readonly TBrainStep[]): string {
         ))
         .filter(Boolean)
         .join(" ");
+}
+
+/** Letters and digits only, so punctuation and spacing differences do not count. */
+function normalizeSpeech(text: string): string {
+    return text.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * True when the streamed lines already contain the tool's say line: the model sometimes writes
+ * the line itself before calling the tool, and it cannot be unsaid.
+ *
+ * @param spoken - Lines already queued for speech
+ * @param say - Tool say line
+ */
+function alreadySpoken(spoken: readonly string[], say: string): boolean {
+    const target = normalizeSpeech(say);
+    return Boolean(target) && normalizeSpeech(spoken.join(" ")).includes(target);
 }
 
 /**
@@ -351,7 +368,7 @@ export function streamVoiceTurn({
             speak(buffer, false);
 
             const toolSay = finalToolSay(await streamed.steps);
-            if (toolSay) {
+            if (toolSay && !alreadySpoken(spoken, agent.formatReply(toolSay))) {
                 speak(toolSay, false);
             }
 

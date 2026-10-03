@@ -123,9 +123,9 @@ describe("streamVoiceTurn", () => {
         expect((await turn.result).assistantText).toBe("Your balance is eighteen hundred forty dollars. Want a plan?");
     });
 
-    it("says a filler line as soon as check_policy starts when nothing has been said yet", async () => {
+    it("says a filler line as soon as confirm_payment starts when nothing has been said yet", async () => {
         const brain = fakeBrain([{
-            parts: [{ type: "tool-input-start", toolName: "check_policy" }, text("That works.")],
+            parts: [{ type: "tool-input-start", toolName: "confirm_payment" }, text("That works.")],
         }]);
 
         const chunks = await collect(
@@ -214,11 +214,29 @@ describe("streamVoiceTurn", () => {
 
         expect(brain.calls).toHaveLength(1);
         expect(chunks.join("")).toBe(
-            `${POLICY_CHECK_FILLER} That works: nine hundred twenty dollars today and nine hundred twenty `
+            "That works: nine hundred twenty dollars today and nine hundred twenty "
             + "dollars on October twelfth. Shall I set it up?",
         );
         expect(result.messages.at(-1)).toEqual({ role: "assistant", content: result.assistantText });
         expect(state.transcriptLines.at(-1)).toBe(`Agent: ${result.assistantText}`);
+    });
+
+    it("does not repeat a tool say line the model already spoke", async () => {
+        const brain = fakeBrain([{
+            parts: [text("Is that a yes? I'll send the link now."), { type: "tool-input-start", toolName: "accept_plan" }],
+            steps: [{
+                text: "Is that a yes? I'll send the link now.",
+                toolCalls: [{}],
+                toolResults: [{ output: { status: "confirm_first", say: "Is that a yes? I'll send the link now." } }],
+            }],
+            responseMessages: [{ role: "assistant", content: [] }],
+        }]);
+
+        const turn = streamVoiceTurn({ agent: brain, userText: "OK, I guess.", messages: GREETING, state: createInitialCallState() });
+        const chunks = await collect(turn.textStream);
+
+        expect(chunks.join("").trim()).toBe("Is that a yes? I'll send the link now.");
+        expect((await turn.result).assistantText).toBe("Is that a yes? I'll send the link now.");
     });
 
     it("finishes the turn even when the listener stops reading (barge-in)", async () => {

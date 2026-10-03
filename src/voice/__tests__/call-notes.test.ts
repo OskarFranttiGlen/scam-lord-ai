@@ -142,10 +142,10 @@ describe("missed promises on the next call", () => {
         const today = new Date().toISOString().slice(0, 10);
 
         const split = await tools.check_policy.execute?.(
-            { installments: [{ date: today, amount: 920 }, { date: "2026-10-12", amount: 920 }] },
+            { installments: [{ date: today, amount: 1200 }, { date: "2026-10-12", amount: 1200 }] },
             TOOL_OPTIONS,
         );
-        const full = await tools.check_policy.execute?.({ installments: [{ date: today, amount: 1840 }] }, TOOL_OPTIONS);
+        const full = await tools.check_policy.execute?.({ installments: [{ date: today, amount: 2400 }] }, TOOL_OPTIONS);
 
         expect(split).toMatchObject({ status: "plan_not_available" });
         expect(full).toMatchObject({ status: "accepted" });

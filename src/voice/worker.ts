@@ -45,10 +45,11 @@ import * as silero from "@livekit/agents-plugin-silero";
 import { RoomEvent, type Participant, type RemoteParticipant } from "@livekit/rtc-node";
 import { fileURLToPath } from "node:url";
 
+import { getStripeClient } from "@/payments/stripe";
 import { createCollectionVoiceAgent } from "./agent";
 import { loadFollowUp, recordCallNotes } from "./call-notes";
 import { ChunkSentenceTokenizer } from "./chunk-tokenizer";
-import { createInitialCallState, type CallState } from "./context";
+import { createInitialCallState, type CallContext, type CallState } from "./context";
 import {
     SIP_PHONE_NUMBER_ATTRIBUTE,
     detectInboundCaller,
@@ -59,6 +60,7 @@ import { ScamLordVoiceAgent, buildCallbackGreeting, buildOpeningGreeting } from 
 import { loadCallSetup, loadCallbackSetup } from "./load-call-context";
 import { loadCheckInContext } from "./maintenance";
 import { TENANT_SIP_PARTICIPANT_IDENTITY } from "./outbound-call";
+import { watchForPayment } from "./payment-watch";
 import { persistCall } from "./persist-call";
 import { replaySkippedSpeech } from "./replay-skipped-speech";
 import { getVoiceSupabaseClient } from "./supabase-client";
@@ -217,6 +219,23 @@ function hangUpAfterGoodbye(ctx: JobContext, session: voice.AgentSession, callSt
 }
 
 /**
+ * Watches Stripe so a payment made during the call is announced live, only when a Stripe
+ * client is configured. The returned stop handle belongs in the job's shutdown callback.
+ *
+ * @param context - Tenancy and invoice snapshot
+ * @param callState - Call state the plan is accepted on
+ * @param session - Voice session running the collection agent
+ */
+function startPaymentWatch(
+    context: CallContext,
+    callState: CallState,
+    session: voice.AgentSession,
+): (() => void) | undefined {
+    const stripe = getStripeClient();
+    return stripe ? watchForPayment({ state: callState, stripe, session, context }) : undefined;
+}
+
+/**
  * Waits up to {@link CALLER_ATTRIBUTES_TIMEOUT_MS} for the caller's `sip.phoneNumber`, which can
  * land after the participant is first visible. Resolves either way; a missing number means an
  * unknown caller.
@@ -262,22 +281,24 @@ function createVoiceSession(ctx: JobContext): voice.AgentSession {
         }),
         tts: new elevenlabs.TTS({
             voiceId: process.env.ELEVEN_VOICE_ID?.trim() || DEFAULT_ELEVEN_VOICE_ID,
-            model: "eleven_flash_v2_5",
+            // Flash garbled shared-library voices (dropped and slurred words) on calls.
+            model: process.env.ELEVEN_MODEL?.trim() || "eleven_turbo_v2_5",
+            // High stability: the voice was cloned from casual speech and otherwise adds ums and breaths.
+            voiceSettings: { stability: 0.85, similarity_boost: 0.7, style: 0, use_speaker_boost: true },
             wordTokenizer: new ChunkSentenceTokenizer(),
         }),
         turnHandling: {
             turnDetection: useVadTurns ? "vad" : new inference.TurnDetector(),
             endpointing: useVadTurns ? { minDelay: 450, maxDelay: 2000 } : { minDelay: 300, maxDelay: 2000 },
-            // Uninterruptible replies made every answer land one turn late. Adaptive detection plus a
-            // two-word floor lets real replies interrupt while "yeah", coughs, and line noise do not;
-            // a false interruption resumes the paused reply.
+            // Uninterruptible replies made every answer land one turn late, so real replies interrupt.
+            // Only transcribed words count (two or more): adaptive mode and false-interruption pausing
+            // both paused the reply on an "uhh" or line noise and chopped it.
             interruption: {
                 enabled: true,
-                mode: "adaptive",
+                mode: "vad",
                 minWords: 2,
                 minDuration: 600,
-                falseInterruptionTimeout: 1500,
-                resumeFalseInterruption: true,
+                resumeFalseInterruption: false,
             },
             // Preemptive generation would call llmNode before end of turn and run the brain twice.
             preemptiveGeneration: { enabled: false },
@@ -359,7 +380,11 @@ async function answerCallback(ctx: JobContext, roomName: string, startedAt: Date
     callState.feedbackRecorded = checkIn.recentFeedback;
     const greeting = buildCallbackGreeting(callContext, { handoffActive: handoff.active });
 
+    // A const handle would still be uninitialized if shutdown fires before session.start
+    // (e.g. an unanswered call), so the stop lands in this holder once the watch starts.
+    const paymentWatchStops: Array<() => void> = [];
     ctx.addShutdownCallback(async () => {
+        paymentWatchStops.forEach(stop => stop());
         await waitForFulfilment(callState);
         await persistCall({
             roomName,
@@ -383,6 +408,10 @@ async function answerCallback(ctx: JobContext, roomName: string, startedAt: Date
     attachLatencyLog(session, agent);
     await session.start({ agent, room: ctx.room });
     hangUpAfterGoodbye(ctx, session, callState);
+    const stopPaymentWatch = startPaymentWatch(callContext, callState, session);
+    if (stopPaymentWatch) {
+        paymentWatchStops.push(stopPaymentWatch);
+    }
     session.say(greeting);
 }
 
@@ -417,7 +446,11 @@ export default defineAgent({
         const callState = createInitialCallState();
         const greeting = buildOpeningGreeting(callContext);
 
+        // A const handle would still be uninitialized if shutdown fires before session.start
+        // (e.g. an unanswered call), so the stop lands in this holder once the watch starts.
+        const paymentWatchStops: Array<() => void> = [];
         ctx.addShutdownCallback(async () => {
+            paymentWatchStops.forEach(stop => stop());
             await waitForFulfilment(callState);
             await persistCall({
                 roomName,
@@ -449,6 +482,10 @@ export default defineAgent({
 
         await session.start({ agent, room: ctx.room });
         hangUpAfterGoodbye(ctx, session, callState);
+        const stopPaymentWatch = startPaymentWatch(callContext, callState, session);
+        if (stopPaymentWatch) {
+            paymentWatchStops.push(stopPaymentWatch);
+        }
         session.say(greeting);
     },
 });

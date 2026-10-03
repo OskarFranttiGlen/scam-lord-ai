@@ -61,7 +61,7 @@ const UNKNOWN_NUMBER = "+15555559999";
 const CALLER_VOICE_ID = process.env.SMOKE_TENANT_VOICE_ID ?? "EXAVITQu4vr4xnSDxMaL";
 
 const PLAN_LINE = "Hi, I got a text about my rent, can I pay half next Friday?";
-const NAME_LINE = "It's Pat Doe, I'm calling about Maple Court.";
+const NAME_LINE = "It's Pat Doe, I'm calling about Sunset Apartments.";
 /** Spoken on the known pass when no tenancy is handed off yet, so the next pass can test carry-over. */
 const HARDSHIP_LINE = "Honestly I lost my job last week, so money is really tight right now.";
 const ACCOUNT_DETAILS = /dollar|\$|\d|balance|\bowe|invoice/i;

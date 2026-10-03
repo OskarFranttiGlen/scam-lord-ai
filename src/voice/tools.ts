@@ -157,6 +157,40 @@ async function withinMs<T>(promise: Promise<T>, ms: number): Promise<T | null> {
     }
 }
 
+/** The tenant's commitment in their own words: a clear yes or a pay-it/link request (HALF-YES). */
+const CLEAR_YES_RE = /\b(yes|yeah|yep|yup|sure|deal|sounds good|works for me|let'?s do it|go ahead|do it|please do)\b/i;
+const PAY_OR_LINK_RE = /\b(link|pay it|pay now|pay today|pay all|pay the (full|whole|entire|balance)|in full|i'?ll pay|i will pay)\b/i;
+/** Reluctant agreement: consent-shaped words that are not a clear yes (HALF-YES). */
+const HEDGE_RE = /\b(ok(ay)?|alright|all right|fine|i guess|i suppose|maybe|kind of|sort of)\b/i;
+/** A question back ("Could I do three payments?") is still negotiating, not agreeing. */
+const QUESTION_RE = /\?\s*$|^(could|can|is there|what|how|would|will|do|does|why|when)\b/i;
+
+/**
+ * The tenant's latest line on the record, or "" before they have said anything.
+ *
+ * @param state - Call state carrying the transcript
+ */
+function lastTenantLine(state: CallState): string {
+    const line = [...state.transcriptLines].reverse().find(entry => entry.startsWith("Tenant: "));
+    return line?.slice("Tenant: ".length) ?? "";
+}
+
+/**
+ * The HALF-YES confirmation spoken when the tenant hedged instead of clearly agreeing: the
+ * model sometimes accepts a reluctant "OK I guess" as consent, so the tool holds the save.
+ */
+const CONFIRM_FIRST = {
+    status: "confirm_first",
+    say: "Is that a yes? I'll send the link now.",
+} as const;
+
+/** Guidance (no say line) so the model answers the tenant's question instead of saving. */
+const NOT_AGREED = {
+    status: "not_agreed",
+    next: "The tenant asked a question; nothing was saved. Answer it in one short sentence, then ask if they "
+        + "agree. Call accept_plan only after a clear yes.",
+} as const;
+
 /**
  * Policy counter-offers may schedule a payment on the (already past) invoice due date;
  * moving those rows to today keeps the offer acceptable on the next turn.
@@ -286,9 +320,12 @@ export function getCollectionTools(
     };
 
     const acceptPlanTool = tool({
-        description: channel === "voice"
-            ? "Tenant agreed to an in-policy plan: save it and text and email the secure payment link"
-            : "Tenant agreed to an in-policy plan: save it, email the secure payment link, and reply with the link",
+        description: (channel === "voice"
+            ? "Tenant clearly agreed to an in-policy plan: save it and text and email the secure payment link. "
+            : "Tenant clearly agreed to an in-policy plan: save it, email the secure payment link, and reply "
+                + "with the link. ")
+            + "A hedge (\"OK I guess\", \"I suppose\", \"maybe\", a reluctant \"OK\") is not a yes: NEVER call this tool; "
+            + "ask \"Is that a yes? I'll send the link now.\" instead.",
         inputSchema: planInputSchema,
         execute: async plan => {
             await deps.signalGate?.pending;
@@ -310,6 +347,15 @@ export function getCollectionTools(
                     say: "The office is checking that first, so I won't ask you to pay anything until they get back "
                         + "to you by tomorrow.",
                 };
+            }
+
+            const lastLine = lastTenantLine(state);
+            const committed = CLEAR_YES_RE.test(lastLine) || PAY_OR_LINK_RE.test(lastLine);
+            if (lastLine && !committed && QUESTION_RE.test(lastLine.trim())) {
+                return NOT_AGREED;
+            }
+            if (lastLine && !committed && HEDGE_RE.test(lastLine)) {
+                return CONFIRM_FIRST;
             }
 
             const result = runPolicy(ctx, plan);
@@ -339,8 +385,7 @@ export function getCollectionTools(
 
             return {
                 status: "saved",
-                say: `You're all set for ${spokenSchedule(result.plan, todayIsoDate())}, `
-                    + "and the secure payment link is on its way by text and email."
+                say: "It's on your phone."
                     + (perk ? ` As a thank you, ${perk.description}.` : ""),
             };
         },
@@ -351,7 +396,8 @@ export function getCollectionTools(
             + "already paid), disputed_line (a specific charge looks wrong), assistance_paperwork (rental assistance "
             + "applied or applying), tenant_portion (Section 8 or a program pays part), move_out_deposit (gave notice, "
             + "asks about the deposit), confirm_claim (says a manager agreed something not on record), urgent_repair "
-            + "(rent held over a repair), lease_change (roommate left), tenancy_at_risk (rent no longer affordable).",
+            + "(rent held over a repair), lease_change (roommate left), tenancy_at_risk (rent no longer affordable), "
+            + "due_date_change (tenant asked to move the rent due date, e.g. the day after payday).",
         inputSchema: z.object({
             type: z.enum(OFFICE_TASK_TYPES),
             details: z.string().min(1).describe("One factual line for the office: what the tenant said, dates, amounts"),
@@ -368,7 +414,10 @@ export function getCollectionTools(
             deps.onStateChange?.(state);
             return {
                 status: "opened",
-                next: "Tell them the office will check it and get back to them by tomorrow. Never promise the outcome.",
+                next: type === "due_date_change"
+                    ? `Confirm the request is with the office ("Done. Thanks, ${ctx.tenantName.split(/\s+/)[0]}.") `
+                        + "and call end_call in the same reply. Never promise the date has changed already."
+                    : "Tell them the office will check it and get back to them by tomorrow. Never promise the outcome.",
             };
         },
     });

@@ -2,8 +2,8 @@
  * @module scripts/eval-voice
  *
  * Black-box eval harness for the ScamLord collection voice agent. Drives scripted
- * multi-turn conversations against `POST /api/voice/turn` (demo tenant Jordan Lee,
- * Maple Court, $1,840 open, max 2 installments, 14 grace days, $75 fee-waiver cap),
+ * multi-turn conversations against `POST /api/voice/turn` (demo tenant John Reyes,
+ * Sunset Apartments, $2,400 open, max 2 installments, 14 grace days, $75 fee-waiver cap),
  * checks call-state outcomes and speech hygiene on every reply, and records latency.
  *
  * Usage: `npm run voice:eval [-- --only <scenarioName>]`; `VOICE_EVAL_URL` overrides the endpoint.

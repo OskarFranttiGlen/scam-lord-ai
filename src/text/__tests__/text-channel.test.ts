@@ -32,10 +32,10 @@ describe("text-channel instructions", () => {
         const ctx = getDemoCallContext();
         const text = buildNegotiationInstructions(ctx, false, "text");
 
-        expect(text).toContain("$1,840");
+        expect(text).toContain("$2,400");
         expect(text).toContain("Fri Oct 9");
         expect(text).toContain("text message");
-        expect(text).not.toContain("eighteen hundred forty dollars");
+        expect(text).not.toContain("twenty-four hundred dollars");
         expect(text).not.toContain("spoken aloud");
     });
 
@@ -51,7 +51,7 @@ describe("text-channel instructions", () => {
         const voice = buildNegotiationInstructions(ctx, false);
 
         expect(buildNegotiationInstructions(ctx, false, "voice")).toBe(voice);
-        expect(voice).toContain("eighteen hundred forty dollars");
+        expect(voice).toContain("twenty-four hundred dollars");
         expect(voice).toContain("spoken aloud");
         expect(buildHandoffInstructions(ctx, true, [], "text")).not.toBe(buildHandoffInstructions(ctx, true, []));
     });
@@ -69,8 +69,8 @@ describe("createCollectionVoiceAgent channel", () => {
         const agent = createCollectionVoiceAgent({ context: getDemoCallContext(), state: createInitialCallState() });
 
         expect(agent.channel).toBe("voice");
-        expect(agent.disclosureLine).toBe("Hi, I'm an AI assistant calling for Maple Court.");
-        expect(agent.formatReply("$1,840 due 2026-10-09")).toBe("eighteen hundred forty dollars due Friday, October ninth");
+        expect(agent.disclosureLine).toBe("Hi, I'm an AI assistant calling for Sunset Apartments.");
+        expect(agent.formatReply("$2,400 due 2026-10-09")).toBe("twenty-four hundred dollars due Friday, October ninth");
     });
 
     it("formats text replies for SMS", () => {
@@ -81,13 +81,13 @@ describe("createCollectionVoiceAgent channel", () => {
         });
 
         expect(agent.channel).toBe("text");
-        expect(agent.disclosureLine).toBe("Hi, this is an AI assistant for Maple Court.");
-        expect(agent.formatReply("$1,840 due 2026-10-09")).toBe("$1,840 due Fri Oct 9");
+        expect(agent.disclosureLine).toBe("Hi, this is an AI assistant for Sunset Apartments.");
+        expect(agent.formatReply("$2,400 due 2026-10-09")).toBe("$2,400 due Fri Oct 9");
     });
 });
 
 describe("accept_plan on text", () => {
-    const plan = { installments: [{ date: "2026-10-03", amount: 920 }, { date: "2026-10-09", amount: 920 }] };
+    const plan = { installments: [{ date: "2026-10-03", amount: 1200 }, { date: "2026-10-09", amount: 1200 }] };
 
     it("waits for the Stripe link, emails it, and puts it in the reply", async () => {
         vi.mocked(fulfilAcceptedPlan).mockResolvedValue({
@@ -112,7 +112,7 @@ describe("accept_plan on text", () => {
         );
         expect(result).toEqual({
             status: "saved",
-            say: "You're all set: $920 today and $920 on Fri Oct 9. Pay the first $920 here: "
+            say: "You're all set: $1,200 today and $1,200 on Fri Oct 9. Pay the first $1,200 here: "
                 + "https://checkout.stripe.com/c/pay/cs_test_1 I emailed it to you too.",
         });
         expect(state.paymentLinkUrl).toBe("https://checkout.stripe.com/c/pay/cs_test_1");
@@ -139,7 +139,7 @@ describe("check_policy on text", () => {
 
         expect(result).toMatchObject({
             status: "counter",
-            say: "The installments need to add up to $1,840. I can do $920 today and $920 on Mon Oct 12. Does that work?",
+            say: "The installments need to add up to $2,400. I can do $1,200 today and $1,200 on Fri Oct 16. Does that work?",
         });
     });
 });

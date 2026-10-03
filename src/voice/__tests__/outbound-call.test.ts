@@ -49,7 +49,7 @@ describe("startCollectionCall", () => {
     it("creates a room carrying callContext metadata, then dials the tenant into it", async () => {
         const { roomName } = await startCollectionCall({ toPhoneNumber: "+14155550123", callContext: CONTEXT });
 
-        expect(roomName).toMatch(/^collect-in_demo_maple_2b_sep-[a-z0-9]+$/);
+        expect(roomName).toMatch(/^collect-in_demo_sunset_4_oct-[a-z0-9]+$/);
         expect(roomCtor).toHaveBeenCalledWith("https://demo.livekit.cloud", "key", "secret");
         expect(sipCtor).toHaveBeenCalledWith("https://demo.livekit.cloud", "key", "secret");
 
@@ -66,7 +66,7 @@ describe("startCollectionCall", () => {
             roomName,
             expect.objectContaining({
                 participantIdentity: TENANT_SIP_PARTICIPANT_IDENTITY,
-                participantName: "Jordan Lee",
+                participantName: "John Reyes",
                 waitUntilAnswered: false,
             }),
         );

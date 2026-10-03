@@ -10,7 +10,7 @@ describe("getDemoCallContext", () => {
     it("uses the placeholder invoice when no seeded invoice is configured", () => {
         vi.stubEnv("DEMO_STRIPE_INVOICE_ID", "");
 
-        expect(getDemoCallContext().stripeInvoiceId).toBe("in_demo_maple_2b_sep");
+        expect(getDemoCallContext().stripeInvoiceId).toBe("in_demo_sunset_4_oct");
     });
 
     it("uses the seeded Stripe invoice from DEMO_STRIPE_INVOICE_ID", () => {

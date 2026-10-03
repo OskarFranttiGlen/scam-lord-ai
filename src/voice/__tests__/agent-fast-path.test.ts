@@ -90,22 +90,22 @@ describe("collection agent tool-turn fast path", () => {
         const state = createInitialCallState();
         const model = new MockLanguageModelV3({
             doGenerate: toolCallResult("check_policy", {
-                installments: [{ date: "2026-10-03", amount: 920 }, { date: "2026-10-12", amount: 920 }],
+                installments: [{ date: "2026-10-03", amount: 1200 }, { date: "2026-10-15", amount: 1200 }],
             }),
         });
         const agent = createCollectionVoiceAgent({ context: getDemoCallContext(), state, model });
 
         const result = await runVoiceTurn({
             agent,
-            userText: "half today and half on October twelfth?",
+            userText: "half today and half on October fifteenth?",
             messages: GREETING,
             state,
         });
 
         expect(model.doGenerateCalls).toHaveLength(1);
         expect(result.assistantText).toBe(
-            "That works: nine hundred twenty dollars today and nine hundred twenty dollars on Monday, "
-            + "October twelfth. Shall I set it up?",
+            "That works: twelve hundred dollars today and twelve hundred dollars on Thursday, "
+            + "October fifteenth. Shall I set it up?",
         );
         expect(result.messages.at(-1)).toEqual({ role: "assistant", content: result.assistantText });
         expect(state.transcriptLines.at(-1)).toBe(`Agent: ${result.assistantText}`);
@@ -142,14 +142,14 @@ describe("fast-path say lines", () => {
         const tools = getCollectionTools(getDemoCallContext(), createInitialCallState());
 
         const result = await tools.check_policy.execute?.(
-            { installments: [{ date: "2026-10-03", amount: 920 }, { date: "2026-10-12", amount: 920 }] },
+            { installments: [{ date: "2026-10-03", amount: 1200 }, { date: "2026-10-15", amount: 1200 }] },
             TOOL_OPTIONS,
         );
 
         expect(result).toMatchObject({
             status: "accepted",
-            say: "That works: nine hundred twenty dollars today and nine hundred twenty dollars on Monday, "
-                + "October twelfth. Shall I set it up?",
+            say: "That works: twelve hundred dollars today and twelve hundred dollars on Thursday, "
+                + "October fifteenth. Shall I set it up?",
         });
     });
 
@@ -163,8 +163,8 @@ describe("fast-path say lines", () => {
 
         expect(result).toMatchObject({
             status: "counter",
-            say: "The installments need to add up to eighteen hundred forty dollars. I can do nine hundred "
-                + "twenty dollars today and nine hundred twenty dollars on Monday, October twelfth. Does that work?",
+            say: "The installments need to add up to twenty-four hundred dollars. I can do twelve hundred "
+                + "dollars today and twelve hundred dollars on Friday, October sixteenth. Does that work?",
         });
     });
 
@@ -172,7 +172,7 @@ describe("fast-path say lines", () => {
         const tools = getCollectionTools(getDemoCallContext(), createInitialCallState(), { channel: "text" });
 
         const result = await tools.check_policy.execute?.(
-            { installments: [{ date: "2026-10-03", amount: 1840 }] },
+            { installments: [{ date: "2026-10-03", amount: 2400 }] },
             TOOL_OPTIONS,
         );
 
@@ -197,7 +197,7 @@ describe("fast-path say lines", () => {
         const tools = getCollectionTools(context, state, { channel: "text" });
 
         const result = await tools.check_policy.execute?.(
-            { installments: [{ date: "2026-10-03", amount: 920 }, { date: "2026-10-12", amount: 920 }] },
+            { installments: [{ date: "2026-10-03", amount: 1200 }, { date: "2026-10-15", amount: 1200 }] },
             TOOL_OPTIONS,
         );
 

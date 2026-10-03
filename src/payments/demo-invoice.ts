@@ -13,6 +13,7 @@
 
 import type Stripe from "stripe";
 
+import { monthName } from "@/voice/call-opening";
 import type { CallContext } from "@/voice/context";
 
 import { dollarsToCents, PLAN_STATUS_RESCHEDULED, STRIPE_METADATA } from "./stripe";
@@ -72,6 +73,7 @@ export async function ensureOpenDemoInvoice(input: TEnsureOpenDemoInvoiceInput):
     });
 
     const dueDate = Math.floor(new Date(`${demo.invoiceDueDate}T23:59:59Z`).getTime() / 1000);
+    const unpaidMonth = demo.ledger?.find(row => row.status === "unpaid")?.month ?? demo.invoiceDueDate;
     const draft = await stripe.invoices.create({
         customer: customer.id,
         currency: "usd",
@@ -86,7 +88,7 @@ export async function ensureOpenDemoInvoice(input: TEnsureOpenDemoInvoiceInput):
         invoice: draft.id,
         amount: amountCents,
         currency: "usd",
-        description: `September rent, ${demo.unitLabel}`,
+        description: `${monthName(unpaidMonth)} rent, ${demo.unitLabel}`,
     });
     const invoice = await stripe.invoices.finalizeInvoice(draft.id, { auto_advance: false });
 

@@ -37,16 +37,16 @@ export function getDemoCallContext(): CallContext {
     }
 
     return {
-        tenantName: "Jordan Lee",
-        propertyName: "Maple Court",
-        unitLabel: "Unit 2B",
+        tenantName: "John Reyes",
+        propertyName: "Sunset Apartments",
+        unitLabel: "Unit 4",
         phone: "+15555550102",
-        email: "jordan.lee@example.com",
-        openBalance: 1840,
-        invoiceDueDate: "2026-09-28",
+        email: "john.reyes@example.com",
+        openBalance: 2400,
+        invoiceDueDate: "2026-10-01",
         policy: {
             maxInstallments: 2,
-            graceDays: 14,
+            graceDays: 15,
             feeWaiverCap: 75,
         },
         perks: [
@@ -56,22 +56,22 @@ export function getDemoCallContext(): CallContext {
                 condition: "pay_open_balance_today",
             },
         ],
-        stripeInvoiceId: process.env.DEMO_STRIPE_INVOICE_ID?.trim() || "in_demo_maple_2b_sep",
-        managerName: "Maple Court Property Management",
+        stripeInvoiceId: process.env.DEMO_STRIPE_INVOICE_ID?.trim() || "in_demo_sunset_4_oct",
+        managerName: "Sunset Properties",
         ledger: [
-            { month: "2026-09", amount: 1840, status: "unpaid" },
-            { month: "2026-08", amount: 1840, status: "late" },
-            { month: "2026-07", amount: 1840, status: "late" },
-            { month: "2026-06", amount: 1840, status: "on_time" },
+            { month: "2026-10", amount: 2400, status: "unpaid" },
+            { month: "2026-09", amount: 2400, status: "late" },
+            { month: "2026-08", amount: 2400, status: "late" },
+            { month: "2026-07", amount: 2400, status: "on_time" },
         ],
         maintenanceRequests: [
             {
-                description: "Kitchen tap repair",
+                description: "Tap repair",
                 status: "scheduled",
                 urgency: "routine",
                 reportedAt: daysAgoIso(12),
                 resolvedAt: null,
-                appointmentLabel: "Thursday morning",
+                appointmentLabel: "Thursday",
             },
             {
                 description: "Smoke alarm battery chirping",

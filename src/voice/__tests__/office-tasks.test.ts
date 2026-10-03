@@ -53,7 +53,7 @@ describe("create_office_task", () => {
 });
 
 describe("accept_plan with an open office task", () => {
-    const TODAY_PLAN = { installments: [{ date: new Date().toISOString().slice(0, 10), amount: 1840 }] };
+    const TODAY_PLAN = { installments: [{ date: new Date().toISOString().slice(0, 10), amount: 2400 }] };
 
     it.each(["payment_match", "disputed_line"] as const)(
         "refuses while a %s task is open and sends no payment link",
