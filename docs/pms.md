@@ -24,7 +24,7 @@ All of these live in Supabase Postgres. Row level security is on. The landlordâ€
 
 | Table | What it stores | Who writes it |
 | --- | --- | --- |
-| `landlords` | Name, phone, link to `auth.users`, Stripe connected account id | Signup and Connect onboarding |
+| `landlords` | Name, phone, link to `auth.users`, Stripe customer id (usage billing), Stripe connected account id (rent payouts) | Signup, Connect onboarding |
 | `properties` | Name, address, `landlord_id` | Landlord |
 | `units` | Label, `property_id` | Landlord |
 | `tenancies` | Tenant name, phone, email, language, `unit_id`, Stripe customer id | Landlord |

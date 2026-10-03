@@ -42,11 +42,17 @@ When there is time past the hackathon core:
 - Leave Smart Retries on for a failed installment
 - With consent, use Financial Connections to suggest a plan the balance can support
 
-## 4. Connect, so each landlord gets paid
+## 4. How we get paid, and how the landlord gets paid
 
-The platform is the property manager. Each landlord is a Stripe connected account (Accounts v2). Recovered rent settles to that landlord. The platform takes a small application fee on rent it actually recovers.
+Two different Stripe flows.
 
-Build this in the hackathon if the closed loop and the in-call Stripe tools are already solid. It is the business model: many properties, money to the right landlord, a fee only when rent comes in.
+**We charge the landlord for usage.** Each property manager we onboard brings one or more landlords. Each landlord is a Stripe customer with a payment method on file. Pricing is pay-per-use through the [Machine Payments Protocol](https://docs.stripe.com/payments/machine): every agent action on that landlord’s portfolio is a priced request, and Stripe settles it. There is no flat subscription. A landlord with more properties, more overdue invoices, and more calls pays more, because that is the usage.
+
+An agent action is a tool or inference on their behalf: starting the call, a Jev check, a Stripe write, sending the link. The call row records which landlord the meter event belongs to.
+
+**The tenant’s rent still goes to the landlord.** Each landlord is also a connected account (Accounts v2). Recovered rent settles there. Our usage charge is separate from that payout. We do not take the rent.
+
+Build Connect in the hackathon if the closed loop and the in-call Stripe tools are already solid. The usage meter should be live for the demo call, so a judge can see the landlord get charged for the agent run.
 
 ## 5. Recovery dashboard
 
@@ -62,4 +68,4 @@ Build 1 and 2 properly. Add 4 if time allows. 3 and 5 can be thin or left as the
 
 ## What Supabase still owns
 
-Stripe holds invoices, schedules, credit notes, and payouts. Supabase holds what Stripe does not: properties, units, tenancy contact details, landlord policy, perks, call transcripts, and Jev scores. Each tenancy stores its Stripe customer id. Each landlord stores its connected account id.
+Stripe holds invoices, schedules, credit notes, and payouts. Supabase holds what Stripe does not: properties, units, tenancy contact details, landlord policy, perks, call transcripts, and Jev scores. Each tenancy stores the tenant’s Stripe customer id. Each landlord stores two Stripe ids: the customer we bill for usage, and the connected account that receives rent.
