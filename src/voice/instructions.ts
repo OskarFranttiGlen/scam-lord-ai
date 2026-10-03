@@ -304,6 +304,22 @@ function buildSpeechRules(ctx: CallContext, disclosed: boolean): string {
 }
 
 /**
+ * Full payment today needs no negotiation: tenants who said yes or asked for the link were being
+ * asked for an amount or offered a plan instead.
+ *
+ * @param ctx - Call context
+ */
+function buildPayInFullRule(ctx: CallContext): string {
+    const perk = ctx.perks[0];
+    return [
+        "PAYING IN FULL:",
+        "- If they say yes to taking care of it today, say they will pay it all, or ask for the payment link, that "
+            + `is full payment today: call accept_plan right away with one payment of ${ctx.openBalance} due today`
+            + `${perk ? ` and perkId ${perk.id}` : ""}. Do not ask for an amount, offer a plan, or call check_policy first.`,
+    ].join("\n");
+}
+
+/**
  * Voice-only rules for the fixed call opening and the scripted answers around it.
  *
  * @param ctx - Call context
@@ -449,6 +465,8 @@ export function buildNegotiationInstructions(
         "",
         buildFollowUpRules(ctx, channel),
         "",
+        buildPayInFullRule(ctx),
+        "",
         "NEGOTIATION:",
         "1. You cannot waive fees, move dates, split payments, or promise anything beyond what check_policy accepts.",
         "2. Before you state any plan, including your own counter-offer, call check_policy with dates from the "
@@ -572,6 +590,7 @@ export function buildPlaybookInstructions(
         buildChannelRules(ctx, disclosed, channel),
         buildOpeningRules(ctx, channel, feedbackRecorded),
         buildFollowUpRules(ctx, channel),
+        buildPayInFullRule(ctx),
         buildCallFacts(ctx, channel),
     ];
     const scripts: Record<typeof playbook, string[]> = {

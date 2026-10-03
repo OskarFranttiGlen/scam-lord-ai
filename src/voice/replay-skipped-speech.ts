@@ -1,10 +1,10 @@
 /**
  * @module voice/replay-skipped-speech
  *
- * Interruptions are off so phone noise never cuts the agent off, but LiveKit then drops any
- * tenant turn that ends while the agent is talking ("skipping user input, current speech
- * generation cannot be interrupted"). A "Yep" over the greeting was lost and the call sat in
- * silence. This replays those finals as a user turn once the agent finishes speaking.
+ * Tenants answer "Yes" over the end of the greeting. That turn is below the interruption word
+ * floor, so LiveKit drops it and the call sits in silence. This replays what was said during
+ * the greeting as a user turn once it finishes. Later replies rely on interruptions instead:
+ * replaying there answers a turn the tenant has already moved past.
  *
  * Depends on: @livekit/agents
  * Used by: @/voice/worker.ts
@@ -19,13 +19,14 @@ export const REPLAY_DELAY_MS = 800;
 export type TReplaySession = Pick<voice.AgentSession, "on" | "generateReply">;
 
 /**
- * Listens on the session and answers tenant speech that LiveKit skipped during agent speech.
+ * Listens on the session and answers tenant speech that LiveKit skipped during the greeting.
  *
- * @param session - Voice session with interruptions disabled
+ * @param session - Voice session about to speak its greeting
  */
 export function replaySkippedSpeech(session: TReplaySession): void {
     const E = voice.AgentSessionEventTypes;
-    let agentSpeaking = false;
+    let agentBusy = false;
+    let greetingDone = false;
     let userSpeaking = false;
     let heard: string[] = [];
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -36,10 +37,14 @@ export function replaySkippedSpeech(session: TReplaySession): void {
     };
 
     session.on(E.AgentStateChanged, (ev: voice.AgentStateChangedEvent) => {
-        // A reply is already scheduled (and uninterruptible) while the agent is thinking.
-        agentSpeaking = ev.newState === "speaking" || ev.newState === "thinking";
+        const wasBusy = agentBusy;
+        agentBusy = ev.newState === "speaking" || ev.newState === "thinking";
         cancel();
-        if (ev.newState !== "listening" || heard.length === 0) {
+        if (ev.newState !== "listening" || !wasBusy || greetingDone) {
+            return;
+        }
+        greetingDone = true;
+        if (heard.length === 0) {
             return;
         }
         timer = setTimeout(() => {
@@ -58,7 +63,7 @@ export function replaySkippedSpeech(session: TReplaySession): void {
 
     session.on(E.UserInputTranscribed, (ev: voice.UserInputTranscribedEvent) => {
         const transcript = ev.transcript.trim();
-        if (agentSpeaking && ev.isFinal && transcript) {
+        if (agentBusy && !greetingDone && ev.isFinal && transcript) {
             heard.push(transcript);
         }
     });

@@ -115,6 +115,21 @@ describe("replaySkippedSpeech", () => {
         expect(s.generateReply).not.toHaveBeenCalled();
     });
 
+    it("only covers the greeting, not later replies", () => {
+        const s = fakeSession();
+        replaySkippedSpeech(s.session);
+
+        s.agent("speaking");
+        s.agent("listening");
+        s.agent("thinking");
+        s.agent("speaking");
+        s.heard("Yeah.");
+        s.agent("listening");
+        vi.advanceTimersByTime(REPLAY_DELAY_MS);
+
+        expect(s.generateReply).not.toHaveBeenCalled();
+    });
+
     it("drops the replay if the agent starts speaking again first", () => {
         const s = fakeSession();
         replaySkippedSpeech(s.session);

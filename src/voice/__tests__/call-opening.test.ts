@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildLedgerLine, buildRentOpening, ledgerFromStripeInvoices } from "../call-opening";
 import { createInitialCallState, type CallContext, type TLedgerMonth } from "../context";
 import { getDemoCallContext } from "../demo-context";
-import { buildNegotiationInstructions } from "../instructions";
+import { buildNegotiationInstructions, buildPlaybookInstructions } from "../instructions";
 import { buildOpeningGreeting } from "../livekit-agent";
 import { getCollectionTools } from "../tools";
 
@@ -169,5 +169,21 @@ describe("ledgerFromStripeInvoices", () => {
             { month: "2026-08", amount: 1840, status: "on_time" },
             { month: "2026-07", amount: 1840, status: "late" },
         ]);
+    });
+});
+
+describe("paying in full", () => {
+    const ctx = getDemoCallContext();
+    const prompts = {
+        negotiation: buildNegotiationInstructions(ctx, true, "voice"),
+        hardship: buildPlaybookInstructions(ctx, true, "hardship", "voice"),
+        dispute: buildPlaybookInstructions(ctx, true, "dispute", "voice"),
+    };
+
+    it.each(Object.entries(prompts))("%s: a yes, paying it all, or asking for the link goes straight to accept_plan", (_, prompt) => {
+        expect(prompt).toMatch(/PAYING IN FULL/);
+        expect(prompt).toMatch(/asks? for the payment link/);
+        expect(prompt).toMatch(/call accept_plan right away with one payment of 1840 due today/);
+        expect(prompt).toMatch(/Do not ask for an amount, offer a plan, or call check_policy first/);
     });
 });

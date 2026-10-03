@@ -268,9 +268,17 @@ function createVoiceSession(ctx: JobContext): voice.AgentSession {
         turnHandling: {
             turnDetection: useVadTurns ? "vad" : new inference.TurnDetector(),
             endpointing: useVadTurns ? { minDelay: 450, maxDelay: 2000 } : { minDelay: 300, maxDelay: 2000 },
-            // Phone line noise and backchannels kept cutting the agent off, so it always finishes its
-            // reply. LiveKit drops turns that end mid-reply; replaySkippedSpeech answers them after.
-            interruption: { enabled: false, discardAudioIfUninterruptible: false },
+            // Uninterruptible replies made every answer land one turn late. Adaptive detection plus a
+            // two-word floor lets real replies interrupt while "yeah", coughs, and line noise do not;
+            // a false interruption resumes the paused reply.
+            interruption: {
+                enabled: true,
+                mode: "adaptive",
+                minWords: 2,
+                minDuration: 600,
+                falseInterruptionTimeout: 1500,
+                resumeFalseInterruption: true,
+            },
             // Preemptive generation would call llmNode before end of turn and run the brain twice.
             preemptiveGeneration: { enabled: false },
         },
