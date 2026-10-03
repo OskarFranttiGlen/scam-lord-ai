@@ -46,6 +46,55 @@ export function hasAssistantLine(messages: ModelMessage[] | undefined): boolean 
     return (messages ?? []).some(message => message.role === "assistant");
 }
 
+type TCollectionCallSettings = {
+    instructions: string;
+    activeTools?: Array<"record_feedback">;
+    toolChoice?: "auto" | "none";
+};
+
+/**
+ * Per-call prompt and tool access: handoff, playbook, or negotiation. A handed-off agent may
+ * still log the check-in, so a repair raised on the same turn as a handoff is not lost.
+ *
+ * @param context - Tenancy and invoice snapshot
+ * @param state - Call state for this turn
+ * @param options.disclosed - An assistant line is already in the conversation
+ * @param options.channel - `voice` or `text`
+ */
+export function collectionCallSettings(
+    context: CallContext,
+    state: CallState,
+    { disclosed, channel }: { disclosed: boolean; channel: TConversationChannel },
+): TCollectionCallSettings {
+    if (state.handoffActive) {
+        const reasons: string[] = state.urgentMaintenance
+            ? ["urgent_maintenance"]
+            : state.jevChecks.at(-1)?.outcome.reasons ?? [];
+        const handoff = buildHandoffInstructions(context, disclosed, reasons, channel, { stopCase: state.stopCase });
+        if (state.feedbackRecorded) {
+            return { instructions: handoff, activeTools: [], toolChoice: "none" };
+        }
+        return {
+            instructions: `${handoff}\n- If they mentioned a repair or how the unit is going, call record_feedback with it `
+                + "(urgent for leaks, no heat, no water, gas, electrical, or safety issues) before you reply.",
+            activeTools: ["record_feedback"],
+            toolChoice: "auto",
+        };
+    }
+    if (state.jevPlaybook) {
+        return {
+            instructions: buildPlaybookInstructions(context, disclosed, state.jevPlaybook, channel, {
+                feedbackRecorded: state.feedbackRecorded,
+            }),
+        };
+    }
+    return {
+        instructions: buildNegotiationInstructions(context, disclosed, channel, {
+            feedbackRecorded: state.feedbackRecorded,
+        }),
+    };
+}
+
 /**
  * Creates a ToolLoopAgent configured for ScamLord collection turns.
  *
@@ -73,34 +122,7 @@ export function createCollectionVoiceAgent({
         prepareCall: ({ messages, prompt, ...rest }) => {
             const disclosed = hasAssistantLine(messages ?? (Array.isArray(prompt) ? prompt : undefined));
             const base = messages ? { ...rest, messages } : { ...rest, prompt: prompt ?? "" };
-
-            if (state.handoffActive) {
-                const reasons: string[] = state.urgentMaintenance
-                    ? ["urgent_maintenance"]
-                    : state.jevChecks.at(-1)?.outcome.reasons ?? [];
-                return {
-                    ...base,
-                    instructions: buildHandoffInstructions(context, disclosed, reasons, channel, {
-                        stopCase: state.stopCase,
-                    }),
-                    activeTools: [],
-                    toolChoice: "none" as const,
-                };
-            }
-            if (state.jevPlaybook) {
-                return {
-                    ...base,
-                    instructions: buildPlaybookInstructions(context, disclosed, state.jevPlaybook, channel, {
-                        feedbackRecorded: state.feedbackRecorded,
-                    }),
-                };
-            }
-            return {
-                ...base,
-                instructions: buildNegotiationInstructions(context, disclosed, channel, {
-                    feedbackRecorded: state.feedbackRecorded,
-                }),
-            };
+            return { ...base, ...collectionCallSettings(context, state, { disclosed, channel }) };
         },
     });
 

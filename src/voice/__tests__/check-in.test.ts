@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { collectionCallSettings } from "../agent";
 import { createInitialCallState, normalizeCallState, type CallContext } from "../context";
 import { getDemoCallContext } from "../demo-context";
 import { buildHandoffInstructions, buildNegotiationInstructions } from "../instructions";
@@ -113,6 +114,30 @@ describe("check-in gate", () => {
             urgentMaintenance: true,
             maintenanceReports: state.maintenanceReports,
         });
+    });
+});
+
+describe("check-in during a handoff", () => {
+    it("lets the handed-off agent log a repair the tenant raised before the check-in was recorded", () => {
+        const state = createInitialCallState();
+        state.handoffActive = true;
+
+        const settings = collectionCallSettings(context(), state, { disclosed: true, channel: "voice" });
+
+        expect(settings.activeTools).toEqual(["record_feedback"]);
+        expect(settings.toolChoice).toBe("auto");
+        expect(settings.instructions).toMatch(/record_feedback/);
+    });
+
+    it("gives the handed-off agent no tools once the check-in is recorded", () => {
+        const state = createInitialCallState();
+        state.handoffActive = true;
+        state.feedbackRecorded = true;
+
+        const settings = collectionCallSettings(context(), state, { disclosed: true, channel: "voice" });
+
+        expect(settings.activeTools).toEqual([]);
+        expect(settings.toolChoice).toBe("none");
     });
 });
 

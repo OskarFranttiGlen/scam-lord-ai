@@ -10,12 +10,15 @@
 import type { CallContext } from "./context";
 
 /**
- * ISO timestamp `days` before now, so the demo history stays recent.
+ * ISO timestamp at UTC midnight `days` before today, so the demo history stays recent and is
+ * identical across calls on the same day.
  *
  * @param days - Whole days back
  */
 function daysAgoIso(days: number): string {
-    return new Date(Date.now() - days * 86_400_000).toISOString();
+    const midnight = new Date();
+    midnight.setUTCHours(0, 0, 0, 0);
+    return new Date(midnight.getTime() - days * 86_400_000).toISOString();
 }
 
 /**
