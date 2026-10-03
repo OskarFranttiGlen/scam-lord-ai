@@ -46,7 +46,7 @@ Payout ──► landlord’s Stripe connected account
 | Gemini | Reads photos tenants send, such as a hardship letter or a repair issue. |
 | Vercel | Hosts the dashboard and runs the agents: `ToolLoopAgent` on the call, `WorkflowAgent` for payment and handoff. Jev runs through AI Gateway. |
 | Codex | Used visibly during the build. |
-| UX | A clean landlord settings screen. |
+| UX | A landlord logs in and sees their portfolio and settings. |
 | Backup | A recorded demo if the live call fails. |
 
 ## Specs
@@ -56,4 +56,5 @@ Payout ──► landlord’s Stripe connected account
 - [Architecture](docs/architecture.md) — who decides what on a call
 - [Safeguards](docs/safeguards.md) — code policy, Jev decisions, human handoff, Gemini
 - [Voice agent](docs/voice-agent.md) — disclosure, prompt, tools, Stripe on the call
+- [Dashboard](docs/dashboard.md) — landlord login, portfolio, settings, calls, billing
 - [Demo](docs/demo.md) — live Stripe path and the recorded backup
