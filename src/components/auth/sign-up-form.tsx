@@ -4,8 +4,7 @@
 /**
  * @module sign-up-form
  * Registration form: email, password, confirm password, username, first/last name with Yup validation.
- * On submit shows Turnstile then TurnstileSignUp to complete registration.
- * Depends on: TurnstileSignUp, UI components, react-hook-form/yup.
+ * Depends on: UI components, react-hook-form/yup, auth helpers.
  * Used by: auth sign-up page.
  */
 import { cn } from '@/lib/utils';
@@ -24,9 +23,10 @@ import { useState } from 'react';
 import * as Yup from "yup";
 import { useForm } from 'react-hook-form';
 import { yupResolver } from "@hookform/resolvers/yup";
-import { TurnstileSignUp } from './TurnstileSignUp';
 import { DASHBOARD_PATH } from '@/lib/dashboard-url';
 import { buildAuthLoginHrefFromNext } from '@/lib/sign-in-return';
+import { handleSignUpViaEmail } from '@/lib/auth/form-handlers';
+import { useRouter } from 'next/navigation';
 
 /** Props: div props plus optional redirectPath preserved for login link (Sign-in return). */
 type TSignUpFormProps = React.ComponentPropsWithoutRef<'div'> & {
@@ -34,9 +34,8 @@ type TSignUpFormProps = React.ComponentPropsWithoutRef<'div'> & {
 };
 
 export function SignUpForm({ className, redirectPath = DASHBOARD_PATH, ...props }: TSignUpFormProps) {
-
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false)
-    const [turnstileOpen, setTurnstileOpen] = useState(false);
 
     const schema = Yup.object({
         email: Yup.string()
@@ -99,9 +98,21 @@ export function SignUpForm({ className, redirectPath = DASHBOARD_PATH, ...props 
     const { onChange: onFirstNameChange } = register("firstName");
     const { onChange: onLastNameChange } = register("lastName");
 
-    const handleSignUp = () => {
+    const handleSignUp = async () => {
         setIsLoading(true);
-        setTurnstileOpen(true);
+        try {
+            await handleSignUpViaEmail(
+                watchEmail,
+                watchPassword,
+                watchConfirmPassword,
+                watchUserName,
+                watchFirstName,
+                watchLastName,
+                router,
+            );
+        } finally {
+            setIsLoading(false);
+        }
     };
 
   return (
@@ -260,16 +271,6 @@ export function SignUpForm({ className, redirectPath = DASHBOARD_PATH, ...props 
               </Link>
             </div>
           </form>
-            { turnstileOpen &&
-                <TurnstileSignUp
-                    email={ watch().email }
-                    password={ watch().password }
-                    confirmPassword={ watch().confirmPassword }
-                    userName={ watch().username }
-                    firstName={ watch().firstName }
-                    lastName={ watch().lastName }
-                />
-            }
         </CardContent>
       </Card>
     </div>

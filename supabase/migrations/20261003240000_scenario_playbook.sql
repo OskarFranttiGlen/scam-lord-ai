@@ -1,4 +1,5 @@
 -- Scenario playbook (Oct 2026): scheduled repair windows and closing satisfaction.
+-- Already applied on prod schema; IF NOT EXISTS keeps push/repair idempotent.
 
 ALTER TABLE public.maintenance_requests
   ADD COLUMN IF NOT EXISTS appointment_label text;

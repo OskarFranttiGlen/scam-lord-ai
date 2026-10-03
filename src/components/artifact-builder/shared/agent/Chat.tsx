@@ -4,7 +4,7 @@
  * Questionnaire gate footer, with attachments and submit/stop.
  * Upgrade banner: shown for Free users always; for subscribed Pro only when LLM credits are 0 (CTA to Pro+); hidden for Pro+.
  * Mobile dismiss hides the banner until remaining credits hit 0.
- * Depends on: prompt-input, attachments, suggestion, UpgradeBanner, useMyFeatureLimits. Used by: Agent.
+ * Depends on: prompt-input, attachments, suggestion. Used by: Agent.
  */
 /* eslint-disable @next/next/no-img-element */
 import {
@@ -38,10 +38,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { UpgradeBanner } from "@/components/ui/upgrade-banner";
-import { useMyFeatureLimits } from "@/api/hooks";
-import { withRenewsOn } from "@/lib/format-usage-reset-date";
-import { useUserContext } from "@/contexts/UserContext";
 import { quickTriggerSuggestionChips } from "@/assets/constants/suggestions";
 import type { FileUIPart } from "ai";
 import { memo, useCallback, forwardRef, useMemo } from "react";
@@ -276,14 +272,6 @@ export const Chat = forwardRef<HTMLDivElement, IProps>((props, ref) => {
     onQuestionsSkip,
     onQuestionsDismiss,
   } = props;
-  const { user } = useUserContext();
-  const { data: featureLimits } = useMyFeatureLimits(user);
-  const outOfCredits = featureLimits != null && featureLimits.remaining_llm_requests === 0;
-  const isProOnlyTier =
-    featureLimits?.has_active_subscription === true && featureLimits.tier === "Pro";
-  const showUpgradeBanner =
-    featureLimits != null &&
-    (!featureLimits.has_active_subscription || (isProOnlyTier && outOfCredits));
   const showQuestions =
     questionsPayload != null && (questionsPayload.questions?.length ?? 0) > 0;
 
@@ -314,22 +302,6 @@ export const Chat = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             ))}
           </Suggestions>
         ) : null}
-        {showUpgradeBanner ? (
-          <UpgradeBanner
-            remainingRequests={featureLimits.remaining_llm_requests}
-            totalRequests={featureLimits.max_monthly_llm_requests}
-            user={user}
-            upgradeButtonLabel={
-              isProOnlyTier && outOfCredits ? "Upgrade to Pro+" : undefined
-            }
-            exhaustedMessage={
-              outOfCredits
-                ? withRenewsOn("You have run out of credits.", featureLimits.resets_on)
-                : undefined
-            }
-            enableMobileDismiss
-          />
-        ) : null}
       </div>
       <div className="flex w-full">
         {showQuestions ? (
@@ -354,7 +326,7 @@ export const Chat = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             >
               <ChatInputBody
                 isLoading={isLoading}
-                outOfCredits={outOfCredits}
+                outOfCredits={false}
                 handleStop={handleStop}
               />
             </PromptInput>

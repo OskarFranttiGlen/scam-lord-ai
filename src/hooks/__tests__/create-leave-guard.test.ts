@@ -1,9 +1,14 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
 
 import {
     BUILDER_DRAFT_KEY,
+    __getBuilderDraftForTests,
     __resetBuilderDraftForTests,
+    __setBuilderDraftForTests,
 } from "@/lib/builder-draft";
 import { createLeaveGuard, newPathLeaveGuard } from "../create-leave-guard";
 
@@ -17,7 +22,6 @@ describe("createLeaveGuard", () => {
         guard.__resetForTests();
         newPathLeaveGuard.__resetForTests();
         __resetBuilderDraftForTests();
-        localStorage.clear();
     });
 
     afterEach(() => {
@@ -25,7 +29,6 @@ describe("createLeaveGuard", () => {
         guard.__resetForTests();
         newPathLeaveGuard.__resetForTests();
         __resetBuilderDraftForTests();
-        localStorage.clear();
     });
 
     it("beforeunload prevents unload only after setDirty(true)", () => {
@@ -193,7 +196,7 @@ describe("createLeaveGuard", () => {
     });
 
     it("newPath Discard clears builder draft", () => {
-        localStorage.setItem(BUILDER_DRAFT_KEY, JSON.stringify([{ title: "A" }]));
+        __setBuilderDraftForTests(JSON.stringify([{ title: "A" }]));
         const { result } = renderHook(() => newPathLeaveGuard.useLeaveGuard());
 
         act(() => {
@@ -215,13 +218,13 @@ describe("createLeaveGuard", () => {
             result.current.onLeaveDialogOpenChange(false);
         });
 
-        expect(localStorage.getItem(BUILDER_DRAFT_KEY)).toBeNull();
+        expect(__getBuilderDraftForTests()).toBeNull();
 
         document.body.removeChild(anchor);
     });
 
     it("newPath Sign-in return click does not Discard the Builder draft", () => {
-        localStorage.setItem(BUILDER_DRAFT_KEY, JSON.stringify([{ title: "A" }]));
+        __setBuilderDraftForTests(JSON.stringify([{ title: "A" }]));
         const { result } = renderHook(() => newPathLeaveGuard.useLeaveGuard());
 
         act(() => {
@@ -239,7 +242,7 @@ describe("createLeaveGuard", () => {
         });
 
         expect(result.current.leaveDialogOpen).toBe(false);
-        expect(localStorage.getItem(BUILDER_DRAFT_KEY)).toBe(
+        expect(__getBuilderDraftForTests()).toBe(
             JSON.stringify([{ title: "A" }]),
         );
 

@@ -158,10 +158,6 @@ ON CONFLICT (id) DO UPDATE SET
     timezone = EXCLUDED.timezone;
 "
 
-    # period_start defaults to the current Usage period (1st of the month, UTC)
-    run_psql -q -c "INSERT INTO public.feature_usage (user_id, monthly_exports_used, monthly_llm_requests) VALUES ('$TEST_USER_ID', 0, 0) ON CONFLICT (user_id, period_start) DO NOTHING;"
-
-
     sed_inplace "s|^NEXT_PUBLIC_TEST_USER_EMAILS=.*|NEXT_PUBLIC_TEST_USER_EMAILS=$TEST_EMAIL|" "$ENV_FILE"
     if grep -q '^TEST_USER_ID=' "$ENV_FILE"; then
         sed_inplace "s|^TEST_USER_ID=.*|TEST_USER_ID=$TEST_USER_ID|" "$ENV_FILE"

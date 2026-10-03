@@ -23,13 +23,10 @@ import {
     applyDashboardMintUrlUpdate,
     stripSearchFromDashboardUrl,
 } from "@/lib/dashboard-url";
-import { recordAnonymousLlmRequest } from "@/api/feature-limits";
 import {
     CHAT_MESSAGES_KEY,
     LONG_PROMPT_PLACEHOLDER,
 } from "@/assets/constants/ui-constants";
-import { withRenewsOn } from "@/lib/format-usage-reset-date";
-import { parseUsageCapFromChatError } from "@/lib/usage-cap";
 import {
     classifyAgentErrorClass,
     truncateForAgentTelemetry,
@@ -293,14 +290,6 @@ export function useDashboardChat(options: IUseDashboardChatOptions): IProps {
                 logJevDebugFromLatestTurn(finishedMessages);
             }
 
-            // Server consume runs at request start — refresh shell counter after any
-            // authenticated turn that reached the stream (success, error, or abort).
-            if (user) {
-                void queryClient.invalidateQueries({
-                    queryKey: ["feature-limits", user.id],
-                });
-            }
-
             const persistChatId = resolvePersistChatId(chatId, pendingMintChatIdRef.current);
             void persistChatHistoryAfterTurn({
                 user,
@@ -317,17 +306,6 @@ export function useDashboardChat(options: IUseDashboardChatOptions): IProps {
             });
         },
         onError: (err) => {
-            const usageCap = parseUsageCapFromChatError(err);
-            if (usageCap) {
-                toast.error(
-                    withRenewsOn("You have run out of credits.", usageCap.resets_on),
-                );
-                void queryClient.invalidateQueries({
-                    queryKey: ["feature-limits", user?.id],
-                });
-                setIsBuilding(false);
-                return;
-            }
             console.error("Chat error:", err);
             setGenerationError(err);
             setIsBuilding(false);
@@ -345,23 +323,12 @@ export function useDashboardChat(options: IUseDashboardChatOptions): IProps {
         setMessages([]);
     }, [resetChatSessionRefs, setMessages]);
 
-    // Paywall is toast + UpgradeBanner - do not surface AgentGenerationError retry UI.
-    const activeError =
-        parseUsageCapFromChatError(error) || parseUsageCapFromChatError(generationError)
-            ? null
-            : generationError || error || null;
+    const activeError = generationError || error || null;
     const isLoading = status === "submitted" || status === "streaming";
 
     const sendMessageWithContext = useCallback<TSendMessageWithContext>(
         async (message, sendOptions) => {
             if (message == null) return;
-
-            // Authenticated LLM meter lives in POST /api/chat (try_consume). Anonymous
-            // still decrements localStorage here - no auth.uid() / period row.
-            if (!user) {
-                recordAnonymousLlmRequest();
-                void queryClient.invalidateQueries({ queryKey: ["feature-limits"] });
-            }
 
             const hadChatIdAtSend = Boolean(chatId);
             // Mint sync so sendMessage (bubble + submitted status / LiveAgentProgress)

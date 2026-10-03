@@ -2,9 +2,9 @@
 
 /**
  * @module forgot-password-form
- * Form to request a password reset: email input, submit triggers Turnstile then reset API.
+ * Form to request a password reset: email input, submit triggers reset API.
  * Shows success state ("Check your email") when reset is sent.
- * Depends on: TurnstileResetPassword, UI card/input/button, cn.
+ * Depends on: UI card/input/button, cn, auth helpers.
  * Used by: auth forgot-password page.
  */
 import { cn } from '@/lib/utils'
@@ -20,7 +20,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useState } from 'react'
-import { TurnstileResetPassword } from './TurnstileResetPassword';
+import { handleResetPasswordRequest } from '@/lib/auth/form-handlers'
+import { toast } from 'sonner'
 
 /** Props: div props (e.g. className) for the form container. */
 export function ForgotPasswordForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
@@ -29,12 +30,22 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
     const [isLoading, setIsLoading] = useState(false);
-    const [turnstileOpen, setTurnstileOpen] = useState(false);
 
-    const handleForgotPassword = async () => {
-        setIsLoading(true)
-        setError(null)
-        setTurnstileOpen(true)
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await handleResetPasswordRequest(email);
+            if (response && response.status === "success") {
+                toast.success(typeof response.data === "string" ? response.data : "success");
+                setSuccess(true);
+            } else {
+                toast.error(typeof response?.data === "string" ? response.data : "Unknown error occurred while resetting password");
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -86,7 +97,6 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
                             </Link>
                         </div>
                         </form>
-                        { turnstileOpen && <TurnstileResetPassword email={email} setSuccess={setSuccess} /> }
                     </CardContent>
                 </Card>
             )}

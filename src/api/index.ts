@@ -1,8 +1,8 @@
 /**
  * @module api/index
  *
- * Browser Supabase client for the app database, plus optional blog and captcha
- * settings. Missing blog or captcha env does not throw. Blog routes are not mounted.
+ * Browser Supabase client for the app database, plus optional blog settings.
+ * Missing blog env does not throw. Blog routes are not mounted.
  *
  * All other API modules (`authentication`, `programs`, `users`, etc.) import
  * their Supabase client from this file, making it the single source of truth
@@ -46,6 +46,3 @@ export const supablog =
   supabaseBlogUrl && supabaseBlogKey
     ? createClient(supabaseBlogUrl, supabaseBlogKey)
     : null;
-
-/** hCaptcha site key used by authentication forms to generate captcha tokens. */
-export const sitekey = process.env.NEXT_PUBLIC_REACT_APP_CAPTCHA_SITE_KEY ?? "";

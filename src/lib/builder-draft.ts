@@ -1,42 +1,48 @@
 /**
- * @module lib/builder-draft
+ * @module builder-draft
  *
- * New-path local resume draft keys (`hevy-program-in-progress` + related).
- * Write only while unsaved. Cleared on Discard leave, banner Clear, successful Save.
- * Success toast is `Saved` (ADR 0016 / 01).
+ * In-memory draft flag + key for leave-guard / new-chat confirm.
+ * No Hevy localStorage payload.
  */
 
-import { CHAT_MESSAGES_KEY } from "@/assets/constants/ui-constants";
+export const BUILDER_DRAFT_KEY = "builder-draft:v1";
 
-export const BUILDER_DRAFT_KEY = "hevy-program-in-progress";
-export const BUILDER_REQUEST_KEY = "hevy-request";
-export const BUILDER_PROMPT_KEY = "prompt";
+const memory = new Map<string, string>();
 
-export const NEW_PATH_SAVE_SUCCESS_TOAST = "Saved";
-
-/** After Discard/Clear/Save, block debounced re-writes until the next dirty edit. */
-let draftWriteEnabled = true;
-
-/** Wipe resume draft + related dashboard localStorage keys. */
-export function clearBuilderDraft() {
-    if (typeof window === "undefined") return;
-    draftWriteEnabled = false;
-    localStorage.removeItem(BUILDER_DRAFT_KEY);
-    localStorage.removeItem(CHAT_MESSAGES_KEY);
-    localStorage.removeItem(BUILDER_REQUEST_KEY);
-    localStorage.removeItem(BUILDER_PROMPT_KEY);
-}
-
-/** Allow draft writes again (call on New-path edits). */
-export function enableBuilderDraftWrites() {
-    draftWriteEnabled = true;
+export function clearBuilderDraft(): void {
+    memory.delete(BUILDER_DRAFT_KEY);
+    if (typeof localStorage !== "undefined") {
+        localStorage.removeItem(BUILDER_DRAFT_KEY);
+    }
 }
 
 export function canWriteBuilderDraft(): boolean {
-    return draftWriteEnabled;
+    return false;
 }
 
-/** @internal test helper */
-export function __resetBuilderDraftForTests() {
-    draftWriteEnabled = true;
+export function enableBuilderDraftWrites(): void {
+    // no-op
+}
+
+/** Test-only reset. */
+export function __resetBuilderDraftForTests(): void {
+    memory.clear();
+    if (typeof localStorage !== "undefined") {
+        localStorage.removeItem(BUILDER_DRAFT_KEY);
+    }
+}
+
+/** Used by leave-guard tests that still poke the draft key. */
+export function __setBuilderDraftForTests(value: string): void {
+    memory.set(BUILDER_DRAFT_KEY, value);
+    if (typeof localStorage !== "undefined") {
+        localStorage.setItem(BUILDER_DRAFT_KEY, value);
+    }
+}
+
+export function __getBuilderDraftForTests(): string | null {
+    if (typeof localStorage !== "undefined") {
+        return localStorage.getItem(BUILDER_DRAFT_KEY);
+    }
+    return memory.get(BUILDER_DRAFT_KEY) ?? null;
 }

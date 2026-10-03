@@ -32,7 +32,6 @@ import { buildDashboardHref, DASHBOARD_PATH } from "@/lib/dashboard-url";
 import { useDashboardActions } from "@/contexts/DashboardActionsContext";
 import { isChatSessionInsertConfirmed } from "@/api/chat-history";
 import { ToolbarPortalButtons } from "@/components/artifact-builder/shared/ToolbarPortalButtons";
-import { DashboardToolbarTitle } from "@/components/artifact-builder/shared/DashboardToolbarTitle";
 import {
     canWriteBuilderDraft,
     enableBuilderDraftWrites,
@@ -607,10 +606,6 @@ function DashboardShell({
             isAgentStreaming={agentMutationLock}
             proposalMarkKeys={proposalMarkKeys}
         >
-            <DashboardToolbarTitle
-                value={"Default Title"}
-                onChange={() => {}}
-            />
             <ToolbarPortalButtons
                 canUndo={isNewPathDirty(undoStackLength)}
                 undoDisabled={agentMutationLock}

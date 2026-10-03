@@ -7,7 +7,7 @@ import { findAgent } from "@/lib/agent-floor/agents";
 import { AgentView } from "../AgentView";
 
 vi.mock("@xyflow/react", () => ({
-    ReactFlow: ({ children }: { children?: React.ReactNode }) => <div>{ children }</div>,
+    ReactFlow: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
     Background: () => null,
 }));
 
@@ -25,13 +25,16 @@ describe("AgentView", () => {
         }
 
         render(
-            <AgentView agent={ agent } onBack={ () => undefined } />,
+            <AgentView agent={agent} onBack={() => undefined} />,
         );
 
         expect(screen.getByText("Casey Diaz")).toBeTruthy();
-        expect(screen.getByText("hardship 0.82")).toBeTruthy();
-        expect(screen.getByText("$960")).toBeTruthy();
-        expect(screen.getByText("fee-waiver cap 0")).toBeTruthy();
+        expect(screen.getByText("Hardship")).toBeTruthy();
+        expect(screen.getByText("0.82")).toBeTruthy();
+        expect(screen.getAllByText("$960.00").length).toBeGreaterThan(0);
+        expect(screen.getByText("Fee-waiver cap")).toBeTruthy();
+        expect(screen.getByText("$0.00")).toBeTruthy();
+        expect(screen.getByRole("button", { name: /back to floor/i })).toBeTruthy();
         expect(screen.queryByRole("textbox")).toBeNull();
     });
 });

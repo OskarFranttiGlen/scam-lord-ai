@@ -26,8 +26,6 @@ import { UserProvider } from "@/contexts/UserContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { DashboardActionsProvider } from "@/contexts/DashboardActionsContext";
 import { AgentDebugModeProvider } from "@/contexts/AgentDebugModeContext";
-import { EditSessionProvider } from "@/contexts/EditSessionContext";
-
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#B8F2D0" },
@@ -114,7 +112,6 @@ export default function RootLayout({
                         <AgentDebugModeProvider>
                             <SidebarProvider defaultOpen={false}>
                                     <DashboardActionsProvider>
-                                    <EditSessionProvider>
                                     <AppShell>
                                         <main id="main">
                                             <PostHogClientProvider>
@@ -128,7 +125,6 @@ export default function RootLayout({
                                             </PostHogClientProvider>
                                         </main>
                                     </AppShell>
-                                    </EditSessionProvider>
                                     </DashboardActionsProvider>
                             </SidebarProvider>
                         </AgentDebugModeProvider>

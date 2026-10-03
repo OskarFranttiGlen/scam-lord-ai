@@ -74,7 +74,7 @@ export function DeleteAccountDialog({ open, onOpenChange }: IDeleteAccountDialog
                 <DialogHeader>
                     <DialogTitle>Delete my account</DialogTitle>
                     <DialogDescription>
-                        Your account and all associated data will be removed. You will lose access to artifacts, chats, and profile data.
+                        Your account and all associated data will be removed. You will lose access to chats and profile data.
                     </DialogDescription>
                 </DialogHeader>
                 <p className="text-sm text-destructive font-medium">
