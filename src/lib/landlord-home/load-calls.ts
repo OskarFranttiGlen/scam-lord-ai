@@ -32,7 +32,8 @@ export async function loadCalls(supabase: SupabaseClient): Promise<IAgent[]> {
     const { data, error } = await supabase
         .from("calls")
         .select(CALLS_SELECT)
-        .order("updated_at", { ascending: false });
+        .order("updated_at", { ascending: false })
+        .overrideTypes<ICallNest[], { merge: false }>();
     if (error) throw new Error(error.message);
-    return rowsToAgents((data ?? []) as ICallNest[]);
+    return rowsToAgents(data ?? []);
 }
