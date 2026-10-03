@@ -1,5 +1,7 @@
 # Landlord dashboard
 
+Supporting note. The locked spec is [SPEC.md](SPEC.md).
+
 A landlord logs in and sees their own portfolio. The app is a small Vercel site. Supabase Auth is the login. Row level security limits every query to that landlord.
 
 The demo account is seeded. The AppFolio connection on screen is display only: it shows the details of a connected account and does not call AppFolio. Production uses the same login after a real PMS sync has created the landlord row.

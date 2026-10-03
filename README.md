@@ -51,6 +51,8 @@ Payout ──► landlord’s Stripe connected account
 
 ## Specs
 
+The locked spec is [docs/SPEC.md](docs/SPEC.md). The notes below are how we got there. If they disagree with the locked spec, the locked spec wins.
+
 - [Stripe](docs/stripe.md) — events start the call, the agent writes the plan in Stripe, each landlord is billed for collection outcomes
 - [Property system](docs/pms.md) — Supabase records and the Vercel agents
 - [Architecture](docs/architecture.md) — who decides what on a call

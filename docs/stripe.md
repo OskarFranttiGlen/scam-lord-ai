@@ -1,5 +1,7 @@
 # Stripe
 
+Supporting note. The locked spec is [SPEC.md](SPEC.md).
+
 Stripe is the backbone, not the checkout step at the end. It tells the agent who to call, the agent fixes the balance inside Stripe, and Stripe pays the landlord.
 
 The pitch line: Stripe tells the agent who to call, the agent fixes it inside Stripe, and Stripe pays the landlord.
