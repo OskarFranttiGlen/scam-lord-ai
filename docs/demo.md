@@ -6,8 +6,8 @@ Stripe is the deepest category bet. Everything else on stage supports that one l
 
 The judge plays the tenant. A second screen shows the Vercel dashboard.
 
-1. The landlord settings screen is already filled: a small installment cap, a short grace window, a fee-waiver cap of zero or a token amount. This is the UX beat.
-2. The call connects. The agent discloses that it is an AI and states a late balance.
+1. The landlord settings screen is already filled, and the dashboard shows more than one property. A small installment cap, a short grace window, and a fee-waiver cap are set. This is the UX beat.
+2. An invoice is marked failed or overdue. The agent calls on its own, names the property, discloses that it is an AI, and states that invoice’s balance.
 3. The judge asks for something outside policy (more installments, a waived fee, or a far-off date).
 4. The agent comes back with the plan the code allows, in a short respectful turn, and may add a perk the landlord wrote (“pay today and we’ll mow the lawn”). That is the Claude beat, inside guardrails.
 5. The judge agrees.
@@ -25,7 +25,7 @@ Record the same eight steps before the demo, including the SMS, the Stripe succe
 
 | Category | Visible evidence |
 | --- | --- |
-| Stripe | Link on the judge’s phone, payment, spoken confirmation. |
+| Stripe | The call starts from a failed or overdue invoice. The plan is written in Stripe. Link on the judge’s phone, payment, spoken confirmation. |
 | Claude | Negotiation that changes when the judge asks for terms the settings forbid. |
 | Gemini | One photo read into the call, if the optional branch is used. |
 | Vercel | Dashboard live on a deployed URL. The call runs through the Vercel agent. Jev calls show in AI Gateway usage if a judge asks. |

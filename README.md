@@ -8,31 +8,40 @@ Built-in safeguards make it trustworthy: upfront AI disclosure, landlord-set pol
 
 A voice agent calling tenants about late rent is weaker than a person at reading emotions, negotiating with judgment, handling hardship and disputes, earning trust, and staying compliant. It is stronger at scale, consistency, 24/7 availability, languages, record-keeping, and instant payment links.
 
-The product leans on those strengths. Where a call needs judgment, Jev supplies it.
+The product leans on those strengths. It is built for a landlord or property manager with many properties: when any invoice goes overdue, the agent starts itself. Where a call needs judgment, Jev supplies it.
 
 ## How a call works
 
-ScamLord AI is its own property system. Supabase stores the tenancy, the open balance, and the landlord’s limits. A Vercel `ToolLoopAgent` (Claude) negotiates from those rows. Jev is the System One model: the low-latency decision layer that judges each turn against constraints we define ahead of time. A Jev flag blocks the next concession and hands the call to a person. A Vercel `WorkflowAgent` waits on the Stripe payment or the human handoff when that outlasts the spoken turn. When the tenant agrees to a plan inside policy, the agent sends one Stripe link by Twilio SMS and by Resend email, then confirms payment on the live call. A plan can include a perk the landlord already wrote, such as mowing the lawn if they pay.
+Stripe tells the agent who to call. An `invoice.payment_failed` event, or an invoice past due, starts a Vercel `WorkflowAgent`, which places the call with that invoice’s property and amount. A later failed installment starts another call with that context.
+
+Supabase stores the tenancy, the landlord’s limits, and the perks. Stripe holds the invoice, the installment schedule, and the payout. A Vercel `ToolLoopAgent` (Claude) negotiates on the call and writes the plan back into Stripe through the Agent Toolkit. Jev is the System One model: the low-latency decision layer that judges each turn against constraints we define ahead of time. A Jev flag blocks the next concession and hands the call to a person. When the tenant agrees, the agent sends one Stripe link by Twilio SMS and by Resend email, then confirms payment on the live call. A plan can include a perk the landlord already wrote, such as mowing the lawn if they pay.
 
 ```
-Supabase  tenancy, charges, policy, plan, payment, call
+Stripe invoice overdue or payment_failed
     │
     ▼
-Vercel ToolLoopAgent (Claude) ── tools: policy, Jev, Stripe, Gemini
+Vercel WorkflowAgent ── starts the call (any property in the portfolio)
+    │
+    ▼
+Supabase  tenancy, policy, perks, call
+    │
+    ▼
+Vercel ToolLoopAgent (Claude) ── tools: policy, Jev, Stripe Toolkit, Gemini
     │
     ▼
 [LiveKit audio] ──► [Deepgram STT] ──► agent ──► [ElevenLabs] ──► audio out
 
+Agreed plan ──► Stripe Subscription Schedule + optional credit note
+Link ──► Twilio SMS + Resend email
 Jev flag ──► handoff
-Stripe or a person taking time ──► Vercel WorkflowAgent
-Landlord settings + live status ──► Vercel dashboard, same Supabase rows
+Payout ──► landlord’s Stripe connected account
 ```
 
 ## Hackathon categories
 
 | Bet | What judges should see |
 | --- | --- |
-| Stripe (deepest) | A judge plays the tenant. The agent negotiates a plan, sends a Stripe link by text and email mid-call, the judge pays, and the agent confirms the payment live. |
+| Stripe (deepest) | An overdue invoice starts the call on its own. The agent negotiates inside Stripe, sends the link by text and email, the judge pays, and the agent confirms it live. |
 | Claude | The negotiation brain, working inside policy guardrails. |
 | Gemini | Reads photos tenants send, such as a hardship letter or a repair issue. |
 | Vercel | Hosts the dashboard and runs the agents: `ToolLoopAgent` on the call, `WorkflowAgent` for payment and handoff. Jev runs through AI Gateway. |
@@ -42,6 +51,7 @@ Landlord settings + live status ──► Vercel dashboard, same Supabase rows
 
 ## Specs
 
+- [Stripe](docs/stripe.md) — events start the call, the agent writes the plan in Stripe, Connect pays the landlord
 - [Property system](docs/pms.md) — Supabase records and the Vercel agents
 - [Architecture](docs/architecture.md) — who decides what on a call
 - [Safeguards](docs/safeguards.md) — code policy, Jev decisions, human handoff, Gemini

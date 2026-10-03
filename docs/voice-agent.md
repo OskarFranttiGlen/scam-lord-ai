@@ -56,12 +56,12 @@ Returns either `continue` or `handoff` plus the reason (`hardship`, `dispute`, `
 
 Input: `tenant_id`, `amount`.
 
-Creates one Stripe Checkout session for that amount. Sends the same link twice:
+Sends the Stripe-hosted link for the invoice or the new schedule. Sends the same link twice:
 
 - Twilio SMS to the tenancy phone
 - Resend email to the tenancy email
 
-If one address is missing, it sends the channel that exists and says so. The `payments` row stores the Stripe session id plus the Twilio and Resend ids. The tool refuses when policy has not accepted the plan, when a handoff is active, or when the amount does not match the accepted plan.
+If one address is missing, it sends the channel that exists and says so. The call row stores the Twilio and Resend ids. The tool refuses when policy has not accepted the plan, when a handoff is active, or when the amount does not match the Stripe invoice.
 
 ### `confirm_payment`
 
