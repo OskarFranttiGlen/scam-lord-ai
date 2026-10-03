@@ -9,11 +9,11 @@ const MONEY_WORDS = /dollar|balance of|\$|\d|owe|invoice/i;
 describe("callback greetings", () => {
     const context = { ...getDemoCallContext(), tenantName: "Jordan Lee", propertyName: "Maple Court" };
 
-    it("greets a known caller by first name and property, disclosing the AI", () => {
+    it("greets a known caller by first name and manager as RentRecovery", () => {
         const greeting = buildCallbackGreeting(context, { handoffActive: false });
 
         expect(greeting).toBe(
-            "Hi Jordan, thanks for calling Maple Court. I'm the AI assistant for the property. "
+            "Hi Jordan, thanks for calling Maple Court Property Management. This is RentRecovery. "
             + "How can I help today?",
         );
     });
@@ -22,7 +22,7 @@ describe("callback greetings", () => {
         const greeting = buildCallbackGreeting(context, { handoffActive: true });
 
         expect(greeting).toContain("Hi Jordan");
-        expect(greeting).toContain("AI assistant");
+        expect(greeting).toContain("This is RentRecovery");
         expect(greeting).toMatch(/follow up/);
         expect(greeting).toMatch(/take a message/);
         expect(greeting).not.toMatch(MONEY_WORDS);

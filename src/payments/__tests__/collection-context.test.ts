@@ -10,6 +10,10 @@ function asInvoice(value: unknown): Stripe.Invoice {
     return value as Stripe.Invoice;
 }
 
+function asStripe(value: unknown): Stripe {
+    return value as Stripe;
+}
+
 const overdue = asInvoice({
     id: "in_overdue",
     customer: "cus_jordan",
@@ -61,6 +65,38 @@ describe("buildCollectionCallRequest", () => {
             },
         });
         expect(calls).toContainEqual({ table: "tenancies", method: "eq", args: ["stripe_customer_id", "cus_jordan"] });
+    });
+
+    it("names the landlord as the manager and reads the ledger from the customer's Stripe invoices", async () => {
+        const { db } = createSupabaseMock({
+            tenancies: {
+                data: {
+                    id: "ten_1",
+                    name: "Jordan Lee",
+                    phone: "+15555550102",
+                    email: null,
+                    units: { label: "Unit 2B", properties: { name: "Maple Court", landlord_id: "ll_1" } },
+                },
+                error: null,
+            },
+            landlords: { data: { stripe_connected_account_id: null, name: "Bay Homes" }, error: null },
+        });
+        const list = vi.fn().mockResolvedValue({
+            data: [
+                { status: "open", amount_due: 184000, due_date: Date.UTC(2026, 8, 28) / 1000, created: 0, status_transitions: { paid_at: null } },
+                { status: "paid", amount_due: 184000, due_date: Date.UTC(2026, 7, 28) / 1000, created: 0, status_transitions: { paid_at: Date.UTC(2026, 8, 5) / 1000 } },
+            ],
+        });
+        const stripe = asStripe({ invoices: { list } });
+
+        const request = await buildCollectionCallRequest({ invoice: overdue, db, stripe });
+
+        expect(request.callContext.managerName).toBe("Bay Homes");
+        expect(request.callContext.ledger).toEqual([
+            { month: "2026-09", amount: 1840, status: "unpaid" },
+            { month: "2026-08", amount: 1840, status: "late" },
+        ]);
+        expect(list).toHaveBeenCalledWith({ customer: "cus_jordan", limit: 6 });
     });
 
     it("looks up by scamlord_tenancy_id metadata when present", async () => {

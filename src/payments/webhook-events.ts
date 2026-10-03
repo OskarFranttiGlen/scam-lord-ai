@@ -119,7 +119,7 @@ async function startCallForInvoice(
     }
 
     const customer = await retrieveCustomer(deps.stripe, invoice);
-    const request = await buildCollectionCallRequest({ invoice, customer, db: deps.db, log });
+    const request = await buildCollectionCallRequest({ invoice, customer, db: deps.db, stripe: deps.stripe, log });
     const { roomName } = await deps.startCollectionCall({
         toPhoneNumber: request.toPhoneNumber,
         callContext: request.callContext,

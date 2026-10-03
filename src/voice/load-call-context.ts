@@ -63,6 +63,12 @@ const callContextSchema = z.object({
         condition: z.string().optional(),
     })),
     stripeInvoiceId: z.string(),
+    managerName: z.string().optional(),
+    ledger: z.array(z.object({
+        month: z.string(),
+        amount: z.number(),
+        status: z.enum(["unpaid", "late", "on_time"]),
+    })).optional(),
 }) satisfies z.ZodType<CallContext>;
 
 const roomMetadataSchema = z.object({

@@ -95,7 +95,7 @@ export async function loadCheckInContext(input: {
     tenancyId: string | null;
     phone: string;
     client?: TVoiceSupabaseClient | null;
-}): Promise<{ maintenanceRequests?: TMaintenanceRequest[]; recentFeedback: boolean }> {
+}): Promise<{ maintenanceRequests?: TMaintenanceRequest[]; recentFeedback: boolean; tenancyId?: string }> {
     const client = input.client === undefined ? getVoiceSupabaseClient() : input.client;
     if (!client) {
         return { recentFeedback: false };
@@ -111,7 +111,7 @@ export async function loadCheckInContext(input: {
             loadMaintenanceHistory(client, tenancyId),
             hasRecentFeedback(client, tenancyId),
         ]);
-        return { maintenanceRequests, recentFeedback };
+        return { maintenanceRequests, recentFeedback, tenancyId };
     } catch {
         return { recentFeedback: false };
     }

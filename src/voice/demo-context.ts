@@ -23,6 +23,8 @@ function daysAgoIso(days: number): string {
 
 /**
  * Returns call context from `DEMO_CALL_CONTEXT` JSON or the built-in overdue-rent demo.
+ * `DEMO_STRIPE_INVOICE_ID` (from `scripts/seed-stripe-demo.ts`) points the built-in demo at a
+ * real Stripe test invoice so accepted plans become installment invoices.
  */
 export function getDemoCallContext(): CallContext {
     const fromEnv = process.env.DEMO_CALL_CONTEXT;
@@ -54,14 +56,22 @@ export function getDemoCallContext(): CallContext {
                 condition: "pay_open_balance_today",
             },
         ],
-        stripeInvoiceId: "in_demo_maple_2b_sep",
+        stripeInvoiceId: process.env.DEMO_STRIPE_INVOICE_ID?.trim() || "in_demo_maple_2b_sep",
+        managerName: "Maple Court Property Management",
+        ledger: [
+            { month: "2026-09", amount: 1840, status: "unpaid" },
+            { month: "2026-08", amount: 1840, status: "late" },
+            { month: "2026-07", amount: 1840, status: "late" },
+            { month: "2026-06", amount: 1840, status: "on_time" },
+        ],
         maintenanceRequests: [
             {
-                description: "Kitchen tap dripping",
-                status: "open",
+                description: "Kitchen tap repair",
+                status: "scheduled",
                 urgency: "routine",
                 reportedAt: daysAgoIso(12),
                 resolvedAt: null,
+                appointmentLabel: "Thursday morning",
             },
             {
                 description: "Smoke alarm battery chirping",

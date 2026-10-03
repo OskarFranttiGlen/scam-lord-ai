@@ -18,6 +18,7 @@ import { checkPolicy } from "@/collection/policy";
 import type { TPaymentPlan, TPerk, TPolicy, TPolicyResult, TSignalDecision } from "@/collection/types";
 import { sendSms } from "@/messaging/sms";
 import { getInvoicePaymentStatus, getStripeClient } from "@/payments/stripe";
+import { MISSED_PROMISES_THRESHOLD } from "./call-notes";
 import type { CallContext, CallState, TAcceptedPlan, TCallPerk } from "./context";
 import { fulfilAcceptedPlan, type TFulfilOptions } from "./fulfil-plan";
 import {
@@ -59,6 +60,12 @@ const CHECK_IN_FIRST = {
     status: "check_in_first",
     say: "Not yet: first ask how things are going with the unit and whether anything needs fixing, "
         + "then call record_feedback with their answer.",
+} as const;
+
+const PLAN_NOT_AVAILABLE = {
+    status: "plan_not_available",
+    say: "Earlier payment dates were missed, so only the full balance today can be set up. If they cannot "
+        + "pay it today, call create_office_task with missed_promises.",
 } as const;
 
 const pendingFulfilments = new WeakMap<CallState, Promise<void>>();
@@ -193,10 +200,16 @@ export function getCollectionTools(
 ) {
     const log = deps.log ?? console;
     const channel = deps.channel ?? "voice";
+    const checkInDone = () => channel === "voice" || state.feedbackRecorded;
+    const missedPromises = (ctx.followUp?.brokenPromises.length ?? 0) >= MISSED_PROMISES_THRESHOLD;
+    const notAvailable = (plan: TAcceptedPlan) => missedPromises
+        && (plan.installments.length !== 1 || plan.installments[0].date !== todayIsoDate());
 
     const recordFeedbackTool = tool({
-        description: "Record the tenant's check-in answer (or that they declined) and any repairs they raised. "
-            + "Required before check_policy or accept_plan.",
+        description: channel === "voice"
+            ? "Log a repair or unit problem the tenant raised on the call."
+            : "Record the tenant's check-in answer (or that they declined) and any repairs they raised. "
+                + "Required before check_policy or accept_plan.",
         inputSchema: feedbackInputSchema,
         execute: async ({ summary, declined, issues }) => {
             const line = declined ? "declined" : summary.trim() || "no issues";
@@ -234,9 +247,12 @@ export function getCollectionTools(
     const checkPolicyTool = tool({
         description: "Check a proposed payment plan against landlord policy before you state it",
         inputSchema: planInputSchema,
-        execute: async plan => (
-            state.feedbackRecorded ? describePolicyResult(runPolicy(ctx, plan), channel) : CHECK_IN_FIRST
-        ),
+        execute: async plan => {
+            if (!checkInDone()) {
+                return CHECK_IN_FIRST;
+            }
+            return notAvailable(plan) ? PLAN_NOT_AVAILABLE : describePolicyResult(runPolicy(ctx, plan), channel);
+        },
     });
 
     /**
@@ -277,8 +293,11 @@ export function getCollectionTools(
         inputSchema: planInputSchema,
         execute: async plan => {
             await deps.signalGate?.pending;
-            if (!state.feedbackRecorded) {
+            if (!checkInDone()) {
                 return CHECK_IN_FIRST;
+            }
+            if (notAvailable(plan)) {
+                return PLAN_NOT_AVAILABLE;
             }
             if (state.handoffActive) {
                 return {

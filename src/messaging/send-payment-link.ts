@@ -2,7 +2,7 @@
  * @module messaging/send-payment-link
  *
  * Sends the same Stripe payment link by Twilio SMS and Resend email in parallel (docs/SPEC.md,
- * Call step 8). A missing address or an unrequested channel skips that channel; a failed channel
+ * Call step 8). The SMS goes as two texts: the message, then the bare link. A missing address or an unrequested channel skips that channel; a failed channel
  * is logged and reported, never thrown, so the call can keep going. The text invites a reply,
  * which reaches the same agent through /api/sms/inbound.
  *
@@ -80,14 +80,28 @@ function escapeHtml(value: string): string {
 }
 
 /**
- * Builds the SMS body: short, plain, property + amount + link.
+ * Builds the first SMS: short, plain, property + amount. The link follows in its own text.
  *
  * @param input - Payment link details
  */
 export function buildPaymentLinkSms(input: TPaymentLinkInput): string {
     return `Hi ${firstName(input.tenantName)}, thanks for talking with us. `
-        + `Here's your secure link to pay ${formatDollars(input.amountDollars)} for ${input.propertyName}: ${input.url} `
+        + `Your secure link to pay ${formatDollars(input.amountDollars)} for ${input.propertyName} is in the next text. `
         + "Questions? Just reply here.";
+}
+
+/**
+ * Texts the message, then the bare link on its own, so each stays short enough for Twilio trial
+ * accounts (which reject long multi-segment texts). The link text decides the result.
+ *
+ * @param phone - E.164 number
+ * @param input - Payment link details
+ */
+async function sendLinkTexts(phone: string, input: TPaymentLinkInput): Promise<string> {
+    await sendSms({ to: phone, body: buildPaymentLinkSms(input) }).catch((error: unknown) => {
+        console.error(`[messaging] payment link intro sms failed: ${error instanceof Error ? error.message : String(error)}`);
+    });
+    return (await sendSms({ to: phone, body: input.url })).sid;
 }
 
 /**
@@ -153,7 +167,7 @@ export async function sendPaymentLinkMessages(input: TPaymentLinkInput): Promise
         !channels.includes("sms")
             ? skip("sms not requested")
             : phone
-                ? settle("sms", async () => (await sendSms({ to: phone, body: buildPaymentLinkSms(input) })).sid)
+                ? settle("sms", () => sendLinkTexts(phone, input))
                 : skip("no phone number"),
         !channels.includes("email")
             ? skip("email not requested")

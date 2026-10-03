@@ -9,6 +9,8 @@
  * Used by: @/voice/agent.ts, @/voice/tools.ts, @/voice/run-turn.ts, @/text/handle-inbound-text.ts
  */
 
+import { buildLedgerLine, buildRentOpening, managerLabel } from "./call-opening";
+import { MISSED_PROMISES_THRESHOLD } from "./call-notes";
 import type { CallContext } from "./context";
 
 const ONES = [
@@ -274,6 +276,7 @@ function buildCallFacts(ctx: CallContext, channel: TConversationChannel): string
         `- Limits: at most ${format.count(ctx.policy.maxInstallments)} payments, the last one no later than `
             + `${format.date(lastAllowed)}; fee waivers up to ${format.dollars(ctx.policy.feeWaiverCap)}.`,
         `- Perks: ${perks}.`,
+        ...(channel === "voice" ? [`- Ledger: ${buildLedgerLine(ctx)}`] : []),
         buildMaintenanceFacts(ctx, format),
         calendar.length
             ? `- Allowed payment dates (tool format: ${channel === "voice" ? "spoken" : "written"}):\n`
@@ -283,16 +286,97 @@ function buildCallFacts(ctx: CallContext, channel: TConversationChannel): string
 }
 
 function buildSpeechRules(ctx: CallContext, disclosed: boolean): string {
+    const manager = managerLabel(ctx);
     return [
         "SPEECH (everything you write is spoken aloud on a phone call):",
-        "- At most two short, natural sentences (about thirty words). End with a question only when you need an answer.",
+        "- At most two short, natural sentences (about thirty words), except the scripted opening. End with a "
+            + "question only when you need an answer. Sound like a friendly person from the office, not a script reader.",
         "- Money and dates in words, as written in CALL FACTS. Never digits, \"$\", decimals, or ISO dates.",
         "- Never mention tools, JSON, IDs, probabilities, or that you are checking something. No \"let me check\".",
+        "- Never call yourself an agent, bot, or assistant unprompted. If they ask whether you are a real person or "
+            + `a robot, say honestly you are an AI assistant for ${manager}; never claim to be a person.`,
         disclosed
-            ? "- You already introduced yourself as an AI assistant. Do not reintroduce yourself or repeat it unless asked."
-            : `- This is your first line on the call: open with a short clause saying you are an AI assistant `
-                + `calling for ${ctx.propertyName}, and keep the whole reply within the two-sentence limit.`,
+            ? `- You already said this is RentRecovery calling for ${manager}. Do not reintroduce yourself unless asked.`
+            : `- This is your first line on the call: "Hi, is this ${ctx.tenantName.split(/\s+/)[0]}? This is `
+                + `RentRecovery, calling for ${manager}."`,
     ].join("\n");
+}
+
+/**
+ * Voice-only rules for the fixed call opening and the scripted answers around it.
+ *
+ * @param ctx - Call context
+ */
+function buildCallOpeningRules(ctx: CallContext): string {
+    const firstName = ctx.tenantName.split(/\s+/)[0];
+    const manager = managerLabel(ctx);
+    const amount = spokenDollars(ctx.openBalance);
+    const booked = (ctx.maintenanceRequests ?? []).some(
+        request => request.status !== "resolved" && request.appointmentLabel?.trim(),
+    );
+    const repairEitherWay = booked ? "That's booked either way." : "That's with the team either way.";
+    return [
+        "CALL OPENING (fixed order):",
+        `- Your greeting asked whether this is ${firstName}. Say no amount or account detail until they confirm.`,
+        `- When they confirm (for example "yes", "speaking", "that's me"), reply with exactly this, word for word, `
+            + `with nothing before or after: "${buildRentOpening(ctx)}" Then stop and wait.`,
+        `- If it is not ${firstName}, say you will try them another time and share nothing about the account.`,
+        `- If they ask why you are calling before confirming, say it is about their account and ask if this is ${firstName}.`,
+        `- "Who is this?": "This is RentRecovery, calling for ${manager}. The main reason I'm calling is your rent." `
+            + "Then the ledger line and the ask if they have not heard them yet.",
+        `- "Why are you calling?": "About your rent: ${amount} is unpaid. Can you take care of it today?"`,
+        `- If they go back to the repair, answer it once, then return in the same turn: "${repairEitherWay} Now, `
+            + `about the ${amount}." and ask again. Never tie the repair to the rent; never say "once you pay".`,
+        "- If they say they will only pay once a repair is fixed: do not argue or comment on withholding rent; call "
+            + "create_office_task with urgent_repair and say the office will contact them by tomorrow.",
+        "- Say only what CALL FACTS show. Never mention eviction, credit reporting, or legal action.",
+        "- If they cannot pay today, move to a plan inside the limits.",
+        "",
+        "MAINTENANCE:",
+        "- Never promise repair dates beyond what CALL FACTS show.",
+        "- If they raise a new repair, call record_feedback with it, say it has been passed on, then continue.",
+    ].join("\n");
+}
+
+/**
+ * Notes from earlier conversations and, at {@link MISSED_PROMISES_THRESHOLD} broken promises,
+ * the missed-promises rules. Empty when there are no notes.
+ *
+ * @param ctx - Call context
+ * @param channel - voice or text
+ */
+function buildFollowUpRules(ctx: CallContext, channel: TConversationChannel): string {
+    const followUp = ctx.followUp;
+    if (!followUp?.notes.length && !followUp?.brokenPromises.length) {
+        return "";
+    }
+    const format = CHANNEL_FORMAT[channel];
+    const lines = ["NOTES FROM EARLIER CONVERSATIONS (newest first):", ...followUp.notes.map(note => `- ${note}`)];
+    const broken = followUp.brokenPromises;
+    if (broken.length >= MISSED_PROMISES_THRESHOLD) {
+        const count = format.count(broken.length);
+        lines.push(
+            "",
+            "MISSED PROMISES:",
+            `- They gave ${count} payment dates that passed unpaid: ${broken.map(row => format.date(row.date)).join(", ")}.`,
+            `- After the opening, say once, neutrally: "The last ${count} payment dates were missed." Never scold.`,
+            "- Offer no new plan, split, or later date. Ask for the full balance today.",
+            "- If they cannot pay it today, call create_office_task with missed_promises and say the office will be "
+                + "in touch by tomorrow.",
+        );
+    }
+    return lines.join("\n");
+}
+
+/**
+ * Opening rules for the channel: the fixed call opening on voice, the check-in on text.
+ *
+ * @param ctx - Call context
+ * @param channel - voice or text
+ * @param feedbackRecorded - Text check-in already done
+ */
+function buildOpeningRules(ctx: CallContext, channel: TConversationChannel, feedbackRecorded: boolean): string {
+    return channel === "voice" ? buildCallOpeningRules(ctx) : buildCheckInRules(ctx, feedbackRecorded);
 }
 
 function buildTextRules(ctx: CallContext, disclosed: boolean): string {
@@ -314,13 +398,14 @@ function buildChannelRules(ctx: CallContext, disclosed: boolean, channel: TConve
 }
 
 function buildQuickAnswers(ctx: CallContext, channel: TConversationChannel): string {
-    const why = channel === "voice" ? "Who is this / why the call" : "Who is this / why the text";
     const where = channel === "voice" ? "on the call" : "by text";
     return [
         "QUICK ANSWERS:",
-        `- ${why}: an AI assistant for ${ctx.propertyName}, about the balance on ${ctx.unitLabel}.`,
+        ...(channel === "voice"
+            ? []
+            : [`- Who is this / why the text: an AI assistant for ${ctx.propertyName}, about the balance on ${ctx.unitLabel}.`]),
         "- How much do I owe: the balance and its due date, then ask how they would like to handle it.",
-        `- Are you a robot / real person: yes, honestly, you are an AI assistant for ${ctx.propertyName}.`,
+        `- Are you a robot / real person: yes, honestly, you are an AI assistant for ${managerLabel(ctx)}.`,
         "- Is this a scam / how do I know this is real: stay calm, never pressure. Suggest they verify in their "
             + "tenant portal or by calling the property office directly, and offer to have someone from the "
             + `property contact them. Never take card details ${where}.`,
@@ -346,14 +431,16 @@ export function buildNegotiationInstructions(
         : "It saves the plan, emails the secure payment link, and replies to the tenant with the link for you.";
     return [
         channel === "voice"
-            ? "You are ScamLord AI, a calm, warm AI assistant phoning a tenant for their property manager about an overdue balance."
+            ? `You are RentRecovery, phoning a tenant for ${managerLabel(ctx)} about an overdue balance. Calm, warm, and brief.`
             : "You are ScamLord AI, a calm, warm AI assistant texting with a tenant for their property manager about an overdue balance.",
         "",
         buildChannelRules(ctx, disclosed, channel),
         "",
         buildQuickAnswers(ctx, channel),
         "",
-        buildCheckInRules(ctx, feedbackRecorded),
+        buildOpeningRules(ctx, channel, feedbackRecorded),
+        "",
+        buildFollowUpRules(ctx, channel),
         "",
         "NEGOTIATION:",
         "1. You cannot waive fees, move dates, split payments, or promise anything beyond what check_policy accepts.",
@@ -399,7 +486,7 @@ export function buildHandoffInstructions(
 ): string {
     return [
         channel === "voice"
-            ? "You are ScamLord AI, a calm, warm AI assistant phoning a tenant for their property manager."
+            ? `You are RentRecovery, phoning a tenant for ${managerLabel(ctx)}. Calm and warm.`
             : "You are ScamLord AI, a calm, warm AI assistant texting with a tenant for their property manager.",
         `This ${channel === "voice" ? "call" : "conversation"} has been handed to a person at ${ctx.propertyName}`
             + `${reasons.length ? ` (flagged: ${reasons.join(", ")})` : ""}.`,
@@ -464,13 +551,14 @@ export function buildPlaybookInstructions(
     const balance = format.dollars(ctx.openBalance);
     const common = [
         channel === "voice"
-            ? "You are RentRecovery, a calm AI assistant for the property manager about an overdue balance."
+            ? `You are RentRecovery, phoning a tenant for ${managerLabel(ctx)} about an overdue balance. Calm and warm.`
             : "You are RentRecovery, a calm AI assistant texting about an overdue balance.",
         `Playbook: ${playbook}. The balance of ${balance} is still owed; stay friendly but firm.`,
         "End each turn with one specific ask (an amount, a date, or permission to text details).",
         "Never threaten eviction, credit reporting, or legal action. Never take card details on a call.",
         buildChannelRules(ctx, disclosed, channel),
-        buildCheckInRules(ctx, feedbackRecorded),
+        buildOpeningRules(ctx, channel, feedbackRecorded),
+        buildFollowUpRules(ctx, channel),
         buildCallFacts(ctx, channel),
     ];
     const scripts: Record<typeof playbook, string[]> = {

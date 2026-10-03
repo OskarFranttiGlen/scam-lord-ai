@@ -42,11 +42,12 @@ describe("formatDollars", () => {
 });
 
 describe("message copy", () => {
-    it("SMS names the tenant, amount, property, and link, and invites a reply", () => {
+    it("SMS names the tenant, amount, and property, says the link follows, and invites a reply", () => {
         expect(buildPaymentLinkSms(INPUT)).toBe(
-            "Hi Jordan, thanks for talking with us. Here's your secure link to pay $1,840 for Maple Court: "
-            + "https://checkout.stripe.com/c/pay/cs_test_123 Questions? Just reply here.",
+            "Hi Jordan, thanks for talking with us. Your secure link to pay $1,840 for Maple Court is in the "
+            + "next text. Questions? Just reply here.",
         );
+        expect(buildPaymentLinkSms(INPUT)).not.toContain(INPUT.url);
     });
 
     it("email carries the same link and escapes HTML", () => {
@@ -60,18 +61,31 @@ describe("message copy", () => {
 });
 
 describe("sendPaymentLinkMessages", () => {
-    it("sends both channels and returns provider ids", async () => {
-        sendSmsMock.mockResolvedValue({ sid: "SM1" });
+    it("still texts the link when the message text fails", async () => {
+        sendSmsMock.mockRejectedValueOnce(new Error("trial length")).mockResolvedValueOnce({ sid: "SM2" });
+        sendEmailMock.mockResolvedValue({ id: "email_1" });
+
+        const result = await sendPaymentLinkMessages(INPUT);
+
+        expect(result.sms).toEqual({ status: "sent", id: "SM2" });
+        expect(sendSmsMock).toHaveBeenLastCalledWith({ to: INPUT.phone, body: INPUT.url });
+    });
+
+    it("texts the message, then the bare link on its own, and emails; reports the link text's id", async () => {
+        sendSmsMock.mockResolvedValueOnce({ sid: "SM1" }).mockResolvedValueOnce({ sid: "SM2" });
         sendEmailMock.mockResolvedValue({ id: "email_1" });
 
         const result = await sendPaymentLinkMessages(INPUT);
 
         expect(result).toEqual({
-            sms: { status: "sent", id: "SM1" },
+            sms: { status: "sent", id: "SM2" },
             email: { status: "sent", id: "email_1" },
             anySent: true,
         });
-        expect(sendSmsMock).toHaveBeenCalledWith({ to: INPUT.phone, body: buildPaymentLinkSms(INPUT) });
+        expect(sendSmsMock.mock.calls).toEqual([
+            [{ to: INPUT.phone, body: buildPaymentLinkSms(INPUT) }],
+            [{ to: INPUT.phone, body: INPUT.url }],
+        ]);
         expect(sendEmailMock).toHaveBeenCalledWith({ to: INPUT.email, ...buildPaymentLinkEmail(INPUT) });
     });
 
