@@ -245,7 +245,7 @@ describe("migrateAnonymousThreadToChat", () => {
 
     it("skips insert and URL mint when send-path already set ?chat=", async () => {
         const existingChatId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
-        window.history.pushState({}, "", `/dashboard?chat=${existingChatId}`);
+        window.history.pushState({}, "", `/?chat=${existingChatId}`);
 
         const messages = [userMessage("Anon thread")];
         const result = await migrateAnonymousThreadToChat({

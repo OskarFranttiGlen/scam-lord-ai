@@ -20,8 +20,8 @@ export interface IProps {
 }
 
 const SIDEBAR_PANEL_CLASS =
-    "border-extraLightGray bg-white sm:bg-extraLightGray dark:bg-extraDarkGray dark:text-white overflow-hidden";
-const MAIN_PANEL_CLASS = "bg-white dark:bg-darkGray";
+    "border-border bg-background overflow-hidden";
+const MAIN_PANEL_CLASS = "bg-background";
 
 function DashboardDesktopLayoutInner({
     sidebarPosition,
@@ -65,7 +65,7 @@ function DashboardDesktopLayoutInner({
     const handle = !isChatHidden ? <ResizableHandle withHandle className="" /> : null;
 
     return (
-        <div className="max-sm:hidden sm:block flex-1 min-h-0">
+        <div className="max-sm:hidden sm:flex sm:min-h-0 sm:flex-1 sm:flex-col">
             <ResizablePanelGroup direction="horizontal">
                 {sidebarPosition === "left" ? (
                     <>

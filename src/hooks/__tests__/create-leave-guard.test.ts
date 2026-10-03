@@ -173,11 +173,11 @@ describe("createLeaveGuard", () => {
 
         let blocked = false;
         act(() => {
-            blocked = guard.requestLeave("/dashboard?empty=true", beforeNavigate);
+            blocked = guard.requestLeave("/?empty=true", beforeNavigate);
         });
         expect(blocked).toBe(true);
         expect(result.current.leaveDialogOpen).toBe(true);
-        expect(result.current.pendingHref).toBe("/dashboard?empty=true");
+        expect(result.current.pendingHref).toBe("/?empty=true");
 
         act(() => {
             result.current.onDiscardLeave();

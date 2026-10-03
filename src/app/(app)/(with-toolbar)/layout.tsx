@@ -1,11 +1,10 @@
 /**
- * @module (app)/(with-toolbar)/dashboard/layout
+ * @module (app)/(with-toolbar)/layout
  *
- * Layout for the builder route. Sticky toolbar (sm+): breadcrumbs + title portal.
- * Fitness set-types / feedback popovers removed (ADR 0034 / 01).
+ * Layout for the builder route at "/dashboard". Sticky toolbar (sm+): breadcrumbs + title portal.
  *
  * Depends on: Breadcrumbs.
- * Used by: dashboard/page.
+ * Used by: (with-toolbar)/dashboard/page.
  */
 
 import { Breadcrumbs } from "@/components/artifact-builder/shared/Breadcrumbs";
@@ -19,7 +18,7 @@ import { ReactNode } from "react";
 export default function ArtifactBuilderLayout({ children }: { children: ReactNode }) {
     return (
         <div className="h-screen max-sm:h-[calc(100dvh-4rem)] flex flex-col overflow-hidden">
-            <div className="max-sm:hidden shrink-0 z-30 p-2 bg-extraLightGray dark:bg-extraDarkGray border-b-2 dark:border-darkGray border-white flex flex-row items-center gap-2 text-xl text-black dark:text-white">
+            <div className="max-sm:hidden shrink-0 z-30 p-2 bg-background border-b border-border flex flex-row items-center gap-2 text-xl text-foreground">
                 <div className="min-w-0 flex-1 overflow-hidden">
                     <Breadcrumbs />
                 </div>
@@ -32,7 +31,7 @@ export default function ArtifactBuilderLayout({ children }: { children: ReactNod
                     <div id="toolbar-actions-portal" />
                 </div>
             </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 {children}
             </div>
         </div>

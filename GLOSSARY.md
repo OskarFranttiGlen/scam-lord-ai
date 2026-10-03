@@ -1,6 +1,6 @@
-# ScamLord
+# RentRecovery
 
-The agent floor for ScamLord: where a person watches agents and asks the Agent manager what they are doing.
+The agent floor for RentRecovery: where a person watches agents and asks the Agent manager what they are doing.
 
 ## Language
 
@@ -10,7 +10,7 @@ _Avoid_: Dashboard (that word is the landlord app), Shipworthy, Chat artifact, g
 
 **Agent manager**:
 The sidebar chat opposite the graph. It reads agents and answers in plain language. The agents on the graph are autonomous: it does not start them, stop them, or change an agent already on a step.
-_Avoid_: Floor agent, ScamLord
+_Avoid_: Floor agent
 
 **Agent**:
 One chain of linked steps. It has a status: in progress, waiting on payment, or waiting on a person. It names a tenant, a property, and the step it is on.

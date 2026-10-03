@@ -126,10 +126,10 @@ export const SaveDialog: React.FC<IProps> = (props) => {
                         } */}
                         <span>
                             {/* { savingRoutine && <span className="pr-4"></span> }
-                            <a href={ `https://app.proximafitness.com?program_id=${programId}` } className="w-full">
+                            <a href="#" className="w-full">
                                 <Button
                                     disabled={ savingRoutine }
-                                    className="max-sm:text-2xl max-sm:w-[30vh] max-sm:h-24 sm:w-92 h-12 uppercase bg-lightSecondary hover:text-white hover:bg-lightSecondary text-white"
+                                    className="max-sm:text-2xl max-sm:w-[30vh] max-sm:h-24 sm:w-92 h-12"
                                 >
                                     { savingRoutine ? "Saving routine…" :
                                         <div className="flex flex-row gap-4">

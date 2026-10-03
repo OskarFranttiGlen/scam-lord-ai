@@ -11,6 +11,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CustomTrigger } from "@/components/CustomSidebarTrigger";
+import { Logo } from "@/components/Logo";
 
 export function MobileSidebarHeader() {
   const pathname = usePathname();
@@ -19,14 +20,12 @@ export function MobileSidebarHeader() {
   return (
     <header
       data-proxima-mobile-header=""
-      className="sm:hidden w-full flex py-2 justify-between items-center bg-white dark:bg-darkGray sticky top-0 z-50 px-2"
+      className="sm:hidden w-full flex py-2 justify-between items-center bg-background sticky top-0 z-50 px-2"
       role="banner"
     >
       <CustomTrigger />
-      <Link href="/" className="absolute left-1/2 -translate-x-1/2" aria-label="ScamLord home">
-        <span className="font-tertiary text-lg font-bold tracking-tight text-foreground">
-          ScamLord
-        </span>
+      <Link href="/" className="absolute left-1/2 -translate-x-1/2" aria-label="RentRecovery home">
+        <Logo size="sm" className="[&_img]:h-8 [&_img]:w-8" />
       </Link>
       {isDashboard ? (
         <div id="toolbar-save-portal-mobile" className="empty:hidden" />

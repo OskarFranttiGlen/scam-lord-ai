@@ -13,13 +13,12 @@
 
 import "@/styles/global.css";
 
-import { Russo_One, Exo, Inter } from "next/font/google";
+import { Archivo_Black, Archivo } from "next/font/google";
 import QueryProvider from '@/utils/QueryProvider';
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from "@/components/ui/sonner";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebarDynamic } from "@/components/AppSidebarDynamic";
-import { MobileSidebarHeader } from "@/components/header/MobileSidebarHeader";
+import { AppShell } from "@/components/AppShell";
 import { Analytics } from "@vercel/analytics/react";
 import NextTopLoader from 'nextjs-toploader';
 import { PostHogClientProvider } from "@/utils/PostHogClientProvider";
@@ -31,38 +30,34 @@ import { EditSessionProvider } from "@/contexts/EditSessionContext";
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#B8F2D0" },
+    { media: "(prefers-color-scheme: dark)", color: "#10241B" },
   ],
 };
 
 export const metadata: Metadata = {
-    title: "ScamLord",
-    description: "Hackathon template: chat that builds a structured artifact.",
+    title: "RentRecovery",
+    description: "AI voice agent that calls tenants the day rent goes late.",
     manifest: "/manifest.webmanifest",
     icons: {
-        icon: "/favicon.svg",
-        shortcut: "/favicon.svg",
-        apple: "/icon-foreground.png",
+        icon: "/app-icon.svg",
+        shortcut: "/app-icon.svg",
+        apple: "/app-icon.svg",
       },
 };
 
-const russo_one = Russo_One({
+const archivoBlack = Archivo_Black({
     weight: ["400"],
-    subsets: ['latin'],
-    display: 'swap',
+    subsets: ["latin"],
+    display: "swap",
+    variable: "--font-display",
 });
 
-const exo = Exo({
-    weight: ["300", "400", "500", "600", "700"],
-    subsets: ['latin'],
-    display: 'swap',
-});
-
-const inter = Inter({
-    weight: ["400", "500", "600", "700"],
-    subsets: ['latin'],
-    display: 'swap',
+const archivo = Archivo({
+    weight: ["400", "600"],
+    subsets: ["latin"],
+    display: "swap",
+    variable: "--font-sans",
 });
 
 
@@ -78,7 +73,7 @@ export default function RootLayout({
 }) {
 
     return (
-        <html lang="en" className={ `${exo.className} ${russo_one.className} ${inter.className}` } suppressHydrationWarning>
+        <html lang="en" className={`${archivoBlack.variable} ${archivo.variable} ${archivo.className}`} suppressHydrationWarning>
             <head>
                 <link rel="icon" href="/favicon.ico" type="image/x-icon" />
                 <script
@@ -88,7 +83,7 @@ export default function RootLayout({
   try {
     var stored = typeof localStorage !== 'undefined' && localStorage.getItem('theme');
     var dark = stored === 'dark' || (stored !== 'light' && typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches);
-    var color = dark ? '#000000' : '#ffffff';
+    var color = dark ? '#10241B' : '#B8F2D0';
     var list = document.querySelectorAll('meta[name="theme-color"]');
     for (var i = 0; i < list.length; i++) list[i].remove();
     var meta = document.createElement('meta');
@@ -120,21 +115,19 @@ export default function RootLayout({
                             <SidebarProvider defaultOpen={false}>
                                     <DashboardActionsProvider>
                                     <EditSessionProvider>
-                                    <AppSidebarDynamic />
-                                    <div className="flex-1 min-w-0 bg-background">
-                                        <MobileSidebarHeader />
+                                    <AppShell>
                                         <main id="main">
                                             <PostHogClientProvider>
                                                 <Analytics />
                                                 <NextTopLoader
                                                     showSpinner={ false }
-                                                    color="#33bbcf"
+                                                    color="#5B2BD9"
                                                 />
                                                 {children}
                                                 <Toaster richColors />
                                             </PostHogClientProvider>
                                         </main>
-                                    </div>
+                                    </AppShell>
                                     </EditSessionProvider>
                                     </DashboardActionsProvider>
                             </SidebarProvider>

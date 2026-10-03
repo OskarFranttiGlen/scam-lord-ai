@@ -26,16 +26,16 @@ describe("sanitizeSignInReturn", () => {
     });
 
     it("rejects external and protocol-relative URLs", () => {
-        expect(sanitizeSignInReturn("https://evil.com")).toBe("/");
-        expect(sanitizeSignInReturn("//evil.com")).toBe("/");
-        expect(sanitizeSignInReturn("/\\evil")).toBe("/");
-        expect(sanitizeSignInReturn("/path://weird")).toBe("/");
+        expect(sanitizeSignInReturn("https://evil.com")).toBe(DEFAULT_SIGN_IN_RETURN);
+        expect(sanitizeSignInReturn("//evil.com")).toBe(DEFAULT_SIGN_IN_RETURN);
+        expect(sanitizeSignInReturn("/\\evil")).toBe(DEFAULT_SIGN_IN_RETURN);
+        expect(sanitizeSignInReturn("/path://weird")).toBe(DEFAULT_SIGN_IN_RETURN);
     });
 
     it("rejects auth routes", () => {
-        expect(sanitizeSignInReturn("/auth")).toBe("/");
-        expect(sanitizeSignInReturn("/auth/login")).toBe("/");
-        expect(sanitizeSignInReturn("/auth/sign-up?next=/pricing")).toBe("/");
+        expect(sanitizeSignInReturn("/auth")).toBe(DEFAULT_SIGN_IN_RETURN);
+        expect(sanitizeSignInReturn("/auth/login")).toBe(DEFAULT_SIGN_IN_RETURN);
+        expect(sanitizeSignInReturn("/auth/sign-up?next=/pricing")).toBe(DEFAULT_SIGN_IN_RETURN);
     });
 
     it("allows /authenticate (not under /auth/)", () => {
@@ -51,7 +51,7 @@ describe("resolveSignInReturnFromLocation", () => {
         ).toBe("/workout/abc?from=profile");
     });
 
-    it("forces resume=true on dashboard and keeps other params", () => {
+    it("forces resume=true on the dashboard and keeps other params", () => {
         expect(
             resolveSignInReturnFromLocation(
                 "/dashboard",
@@ -90,7 +90,7 @@ describe("preserve next across auth forms", () => {
             `${AUTH_LOGIN_PATH}?next=${encodeURIComponent("/pricing")}`,
         );
         expect(buildAuthLoginHrefFromNext("https://evil.com")).toBe(
-            `${AUTH_LOGIN_PATH}?next=${encodeURIComponent("/")}`,
+            `${AUTH_LOGIN_PATH}?next=${encodeURIComponent(DEFAULT_SIGN_IN_RETURN)}`,
         );
     });
 

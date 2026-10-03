@@ -7,12 +7,12 @@ vi.mock("@/app/(app)/(with-toolbar)/dashboard/Dashboard", () => ({ Dashboard: ()
 vi.mock("@/components/artifact-builder/shared/DashboardSkeletonSSR", () => ({
     DashboardSkeletonSSR: () => null,
 }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 vi.mock("@/components/CustomSidebarTrigger", () => ({ CustomTrigger: () => null }));
 
-import ArtifactBuilderLayout from "@/app/(app)/(with-toolbar)/dashboard/layout";
+import ArtifactBuilderLayout from "@/app/(app)/(with-toolbar)/layout";
 
-describe("dashboard layout.tsx", () => {
+describe("(with-toolbar) layout.tsx", () => {
     afterEach(() => {
         cleanup();
     });

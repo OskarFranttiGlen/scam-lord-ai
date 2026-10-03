@@ -15,6 +15,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { buildDashboardHref } from "@/lib/dashboard-url";
 
 interface IRecentChatMenuItemProps {
     chat: TChatListItem;
@@ -36,9 +37,10 @@ export function RecentChatMenuItem({
     onDropdownOpenChange,
 }: IRecentChatMenuItemProps) {
     const displayTitle = chat.title?.trim() || "Untitled chat";
-    const href = `/dashboard?chat=${encodeURIComponent(chat.id)}${
-        chat.program_id ? `&shareId=${encodeURIComponent(chat.program_id)}` : ""
-    }`;
+    const href = buildDashboardHref({
+        chatId: chat.id,
+        ...(chat.program_id ? { shareId: chat.program_id } : {}),
+    });
 
     return (
         <SidebarMenuItem>

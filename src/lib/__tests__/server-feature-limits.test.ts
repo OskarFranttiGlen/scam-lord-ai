@@ -93,7 +93,7 @@ describe("feature-limits test tier helpers", () => {
 describe("server-feature-limits", () => {
     const mockRpc = vi.fn();
     const supabase = mockSupabase({ rpc: mockRpc });
-    const user = { id: "user-1", email: "qa@proxima.test" } as User;
+    const user = { id: "user-1", email: "qa@example.com" } as User;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -173,7 +173,7 @@ describe("usageCapResponse", () => {
 describe("tryConsumeMonthlyLlmRequest", () => {
     const mockRpc = vi.fn();
     const supabase = mockSupabase({ rpc: mockRpc });
-    const user = { id: "user-1", email: "qa@proxima.test" } as User;
+    const user = { id: "user-1", email: "qa@example.com" } as User;
 
     beforeEach(() => {
         vi.clearAllMocks();

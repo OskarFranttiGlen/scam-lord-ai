@@ -24,13 +24,13 @@ const MAX_FIRST_PROMPT_CHARS = 4000;
  */
 export function buildChatTitlePrompt(firstUserPrompt: string): string {
     const clipped = firstUserPrompt.slice(0, MAX_FIRST_PROMPT_CHARS);
-    return `Write a chat title that summarizes why this fitness coaching chat exists, using only the user's first message.
+    return `Write a short chat title from the user's first message only.
 
 Rules:
 - Plain text only. No quotes, markdown, or labels like "Title:".
 - Same language as the message.
 - At most 200 characters.
-- Name the training request or goal, not a greeting.
+- Name the request, not a greeting.
 
 First message:
 ${clipped}

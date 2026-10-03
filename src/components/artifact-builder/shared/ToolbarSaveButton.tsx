@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Save, Loader2, RefreshCw, ArrowRight } from "lucide-react";
 
 const TOOLBAR_PERSIST_PILL =
-    "rounded-full px-4 gap-2 text-white bg-lightSecondary hover:bg-lightSecondary/90 shadow-sm";
+    "rounded-lg px-4 gap-2";
 
 interface IToolbarSaveButtonProps {
     onClick: () => void;

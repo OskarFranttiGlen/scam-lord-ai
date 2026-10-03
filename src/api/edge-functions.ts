@@ -1,8 +1,8 @@
 /**
  * @module api/edge-functions
  *
- * Client-side wrappers for Supabase Edge Functions that power Proxima's AI
- * features. Each function constructs a fetch request to a specific edge-function
+ * Client-side wrappers for Supabase Edge Functions.
+ * Each function constructs a fetch request to a specific edge-function
  * endpoint, authenticates with the anon key, and returns the parsed response.
  *
  * Capabilities include:
@@ -266,7 +266,7 @@ export const postNsfwImageDetection = async (imageUrl: string) => {
 
 //         if (response !== undefined) {
 //             const parsedResponse = JSON.parse(response);
-//             toast.success("Proxima AI Routines Generated. Building Program Structure...");
+//             toast.success("Routines generated. Building program structure...");
 
 //             const program = await buildHevyProgram(parsedResponse, Number(request.programLength), Number(request.daysPerWeek), request.excludeAreas, request.excludeEquipment, request.healthIssues);
 //             return program;

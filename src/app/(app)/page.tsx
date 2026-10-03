@@ -1,26 +1,28 @@
 /**
  * @module (app)/page
  *
- * Home page route. Renders the hero Prompt only (ADR 0033 slice 1).
- * Sits at src/app/(app)/page.tsx; entry for "/" within the (app) segment.
- *
- * Depends on: Prompt, createClient (Supabase server).
- * Used by: Next.js (route "/").
+ * Public landing page: logo and login. Route "/".
  */
 
-import { Prompt } from '@/components/artifact-builder/shared/Prompt';
-import { createClient } from "@/utils/supabase/server";
+import { LoginForm } from "@/components/auth/login-form";
+import { Logo } from "@/components/Logo";
+import { DASHBOARD_PATH } from "@/lib/dashboard-url";
 
-export function generateStaticParams() {
-  return [{ slug: [''] }];
-}
+export const metadata = {
+    title: "RentRecovery",
+    description: "Log in to RentRecovery",
+};
 
-/** Server component for the home page. Fetches current user and passes to Prompt. */
-export default async function Page() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
+export default function LandingPage() {
     return (
-        <Prompt userData={user} />
+        <div
+            data-auth-frame=""
+            className="flex min-h-svh flex-col items-center justify-center gap-8 bg-brand-mint px-4 py-12 text-brand-ink"
+        >
+            <Logo ground="mint" size="lg" />
+            <div className="w-full max-w-md">
+                <LoginForm redirectPath={DASHBOARD_PATH} />
+            </div>
+        </div>
     );
 }

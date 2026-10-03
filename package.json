@@ -1,6 +1,6 @@
 {
-  "name": "shipworthy",
-  "description": "Shipworthy hackathon template: chat that builds a structured artifact",
+  "name": "rent-recovery",
+  "description": "RentRecovery — rent collection agent, landlord dashboard, and agent floor",
   "private": true,
   "version": "0.0.0",
   "type": "module",

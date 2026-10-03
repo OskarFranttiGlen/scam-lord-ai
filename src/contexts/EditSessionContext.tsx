@@ -34,7 +34,7 @@ export type TEditSession = {
     initialRoutineIds: string[];
     /** Hevy folder id from the link — the Sync POST target. Never `routine.folder_id`. */
     initialFolderId: number | null;
-    /** Proxima program id. Absent on Hevy-only Edit (no link). */
+    /** Saved program id. Absent on Hevy-only Edit (no link). */
     programId?: number;
     /** 1-based week this folder is the Hevy week copy of. Absent on Hevy-only. */
     nthWeek?: number;

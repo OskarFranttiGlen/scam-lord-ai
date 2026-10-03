@@ -102,15 +102,15 @@ export default function AnimatedRotatingText() {
           }}
         >
           {!isAnimating ? (
-            <span className="staticPhrase" style={{ color: "#33bbcf" }}>
+            <span className="staticPhrase" style={{ color: "hsl(var(--primary))" }}>
               {currentPhrase}
             </span>
           ) : (
             <>
-              <span className="outgoing" style={{ color: "#33bbcf" }}>
+              <span className="outgoing" style={{ color: "hsl(var(--primary))" }}>
                 {currentPhrase}
               </span>
-              <span className="incoming" style={{ color: "#33bbcf" }}>
+              <span className="incoming" style={{ color: "hsl(var(--primary))" }}>
                 {nextPhrase}
               </span>
             </>

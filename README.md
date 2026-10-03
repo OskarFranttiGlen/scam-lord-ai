@@ -1,4 +1,4 @@
-# ScamLord AI
+# RentRecovery
 
 A rent collection agent that recovers more payments by making it easy for tenants to pay. It resolves late rent quickly and professionally with flexible plans, instant payment, and a respectful tone that keeps the tenant relationship strong.
 

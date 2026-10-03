@@ -52,9 +52,9 @@ export function buildFloorGraph(agents: readonly IAgent[]): {
                     current,
                 },
                 style: {
-                    color: "#111111",
-                    background: "#ffffff",
-                    border: current ? "2px solid #33bbcf" : "1px solid #e5e5e5",
+                    color: "hsl(var(--card-foreground))",
+                    background: "hsl(var(--card))",
+                    border: current ? "2px solid hsl(var(--ring))" : "1px solid hsl(var(--border))",
                     fontWeight: current ? 700 : 400,
                 },
             });

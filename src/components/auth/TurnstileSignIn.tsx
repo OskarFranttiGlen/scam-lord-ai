@@ -12,13 +12,14 @@ import { sitekey } from "@/api";
 import { handleSignInViaEmail } from "../artifact-builder/utils/authentication";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { DASHBOARD_PATH } from "@/lib/dashboard-url";
 import { sanitizeSignInReturn } from "@/lib/sign-in-return";
 
 /** @property email - User's email for sign-in. */
 /** @property password - User's password. */
 /** @property handleTurnstileClose - Called to hide Turnstile (e.g. after error). */
 /** @property onSignInError - Optional callback when sign-in fails (e.g. clear password). */
-/** @property redirectPath - Path to redirect to on success; default '/'. */
+/** @property redirectPath - Path to redirect to on success; default dashboard. */
 interface IProps {
     email: string,
     password: string,
@@ -36,7 +37,7 @@ export const TurnstileSignIn: React.FC<IProps> = (props) => {
         password,
         handleTurnstileClose,
         onSignInError,
-        redirectPath = '/',
+        redirectPath = DASHBOARD_PATH,
     } = props;
 
     const safeRedirectPath = sanitizeSignInReturn(redirectPath);
@@ -66,7 +67,7 @@ export const TurnstileSignIn: React.FC<IProps> = (props) => {
                 } }
             />
             { signingIn &&
-                <span className="text-sm text-lightSecondary">Verifying you&apos;re not a bot…</span>
+                <span className="text-sm text-primary">Verifying you&apos;re not a bot…</span>
             }
         </>
     );

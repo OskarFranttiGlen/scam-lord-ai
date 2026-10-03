@@ -2,7 +2,7 @@
  * @module dashboard-url
  * Builder URL helpers for chat mint / resume / search strip (ADR 0034 / 01).
  * Depends on: next/navigation.
- * Used by: sign-in-return, PromptTemplate, chat-history, use-dashboard-chat.
+ * Used by: sign-in-return, chat-history, use-dashboard-chat, sidebar links.
  */
 
 import type { ReadonlyURLSearchParams } from "next/navigation";
@@ -20,6 +20,7 @@ type TRouterLike = {
 
 interface IBuildDashboardHrefOptions {
     chatId?: string;
+    shareId?: string;
     search?: string;
     resume?: boolean;
     empty?: boolean;
@@ -37,6 +38,7 @@ export function buildDashboardHref(
 ): string {
     const params = new URLSearchParams();
     if (options.chatId) params.set("chat", options.chatId);
+    if (options.shareId) params.set("shareId", options.shareId);
     if (options.search) params.set("search", options.search);
     if (options.resume) params.set("resume", "true");
     if (options.empty) params.set("empty", "true");

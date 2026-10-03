@@ -28,7 +28,7 @@ import { CHAT_MESSAGES_KEY, COLLAPSED_SIZE, EXPANDED_SIZE, SIDEBAR_POSITION_KEY,
 import { useDebouncedCallback } from "use-debounce";
 import { useUserContext } from "@/contexts/UserContext";
 import { buildAuthLoginHref } from "@/lib/sign-in-return";
-import { buildDashboardHref } from "@/lib/dashboard-url";
+import { buildDashboardHref, DASHBOARD_PATH } from "@/lib/dashboard-url";
 import { useDashboardActions } from "@/contexts/DashboardActionsContext";
 import { isChatSessionInsertConfirmed } from "@/api/chat-history";
 import { ToolbarPortalButtons } from "@/components/artifact-builder/shared/ToolbarPortalButtons";
@@ -68,16 +68,13 @@ import type { User } from "@supabase/supabase-js";
 import { useChatHistory, useChatIds } from "@/api/hooks";
 import posthog from "posthog-js";
 
-/** Builder route path — was `@/lib/dashboard-url` (deleted). */
-const DASHBOARD_PATH = "/dashboard";
-
 /** Logged-in only; module guard avoids duplicate capture under Strict Mode remount. */
 let buildProgramPageViewSent = false;
 
 function logPageView(userId: string | undefined): void {
     if (!userId || buildProgramPageViewSent) return;
     buildProgramPageViewSent = true;
-    posthog?.capture?.("page_view", { page: "/dashboard", user: userId });
+    posthog?.capture?.("page_view", { page: DASHBOARD_PATH, user: userId });
 }
 
 function getMessageText(message: unknown): string {
@@ -634,13 +631,13 @@ function DashboardShell({
                                 variant="outline"
                                 size="sm"
                                 onClick={handleOpenChat}
-                                className="fixed top-31 z-40 max-sm:hidden gap-2 rounded-l-none rounded-r-full px-4 py-2 shadow-md bg-white dark:bg-extraDarkGray border-gray-300 dark:border-gray-600"
+                                className="fixed top-31 z-40 max-sm:hidden gap-2 rounded-l-none"
                                 aria-label="Open chat"
                             >
                                 <MessageSquare className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent className="bg-lightSecondary text-white">Open chat</TooltipContent>
+                        <TooltipContent>Open chat</TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
             )}

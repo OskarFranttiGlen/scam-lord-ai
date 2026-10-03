@@ -23,18 +23,19 @@ import { useState } from 'react'
 import { Separator } from '../ui/separator'
 import { Provider } from '@supabase/supabase-js'
 import { TurnstileSignIn } from './TurnstileSignIn'
+import { DASHBOARD_PATH } from '@/lib/dashboard-url'
 import { buildAuthSignUpHrefFromNext, sanitizeSignInReturn } from '@/lib/sign-in-return'
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from 'react-hook-form'
 
-/** Props: div props plus redirectPath (where to send user after successful login; default '/'). */
+/** Props: div props plus redirectPath (where to send user after successful login; default dashboard). */
 type TLoginFormProps = React.ComponentPropsWithoutRef<'div'> & {
   redirectPath?: string;
 };
 
 /** Renders login card with OAuth, email/password form, and Turnstile-gated sign-in. */
-export function LoginForm({ className, redirectPath = '/', ...props }: TLoginFormProps) {
+export function LoginForm({ className, redirectPath = DASHBOARD_PATH, ...props }: TLoginFormProps) {
     const safeRedirectPath = sanitizeSignInReturn(redirectPath);
 
     const [error, setError] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export function LoginForm({ className, redirectPath = '/', ...props }: TLoginFor
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: provider,
                 options: {
-                redirectTo: `https://proximafitness.com/auth/oauth?next=${encodeURIComponent(safeRedirectPath)}`,
+                redirectTo: `${window.location.origin}/auth/oauth?next=${encodeURIComponent(safeRedirectPath)}`,
                 },
             })
 
@@ -122,7 +123,7 @@ export function LoginForm({ className, redirectPath = '/', ...props }: TLoginFor
 
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
-      <Card className='bg-lightGray dark:bg-extraDarkGray dark:text-white'>
+      <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
         </CardHeader>
@@ -131,7 +132,7 @@ export function LoginForm({ className, redirectPath = '/', ...props }: TLoginFor
             <form onSubmit={ (e) => handleSocialLogin(e, "apple")}>
                 <div className="flex flex-col gap-6">
                     {error && <p className="text-sm text-destructive-500">{error}</p>}
-                    <Button variant='outline' type="submit" className="w-full" disabled={isLoading}>
+                    <Button variant="secondary" type="submit" className="w-full" disabled={isLoading}>
                         {appleIsLoading ? 'Logging in...' : 'Continue with Apple'}
                     </Button>
                 </div>
@@ -139,7 +140,7 @@ export function LoginForm({ className, redirectPath = '/', ...props }: TLoginFor
             <form onSubmit={ (e) => handleSocialLogin(e, "google")}>
                 <div className="flex flex-col gap-6">
                     {error && <p className="text-sm text-destructive-500">{error}</p>}
-                    <Button variant="outline" type="submit" className="w-full" disabled={isLoading}>
+                    <Button variant="secondary" type="submit" className="w-full" disabled={isLoading}>
                         {googleIsLoading ? 'Logging in...' : 'Continue with Google'}
                     </Button>
                 </div>
@@ -153,7 +154,7 @@ export function LoginForm({ className, redirectPath = '/', ...props }: TLoginFor
                 <Input
                     id="email"
                     type="email"
-                    placeholder="lifter@proximafitness.com"
+                    placeholder="you@example.com"
                     required
                     value={ watchEmail }
                     onInput={ (e) => {
@@ -194,7 +195,7 @@ export function LoginForm({ className, redirectPath = '/', ...props }: TLoginFor
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full bg-lightSecondary text-white" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </div>

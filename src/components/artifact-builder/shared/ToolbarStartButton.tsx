@@ -12,7 +12,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const START_PILL =
-    "rounded-full px-4 gap-2 text-white bg-lightSecondary hover:bg-lightSecondary/90 shadow-sm";
+    "rounded-lg px-4 gap-2";
 
 interface IToolbarStartButtonProps {
     /** Overview href. Null while Save is in flight (button stays disabled). */

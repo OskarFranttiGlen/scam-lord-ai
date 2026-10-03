@@ -74,7 +74,7 @@ function QuestionSelect({
                                 className={cn(
                                     "flex size-5 shrink-0 items-center justify-center rounded text-xs font-medium",
                                     "bg-muted text-muted-foreground",
-                                    isSelected && "bg-lightSecondary text-white",
+                                    isSelected && "bg-primary text-primary-foreground",
                                 )}
                             >
                                 {letterKeys[optionIndex]}
@@ -99,7 +99,7 @@ function QuestionSelect({
                                 className={cn(
                                     "flex size-5 shrink-0 items-center justify-center rounded text-xs font-medium",
                                     "bg-muted text-muted-foreground",
-                                    isOtherSelected && "bg-lightSecondary text-white",
+                                    isOtherSelected && "bg-primary text-primary-foreground",
                                 )}
                             >
                                 {letterKeys[question.options.length] ?? "?"}
@@ -312,7 +312,7 @@ export function Questions({
                     size="sm"
                     disabled={busy}
                     onClick={handleComplete}
-                    className="bg-lightSecondary text-white hover:bg-lightSecondary/90"
+                    className=""
                 >
                     {busy ? <Loader2 className="size-4 animate-spin" /> : "Continue"}
                 </Button>

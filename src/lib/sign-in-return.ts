@@ -14,13 +14,13 @@ import {
     resolveDashboardReturnHref,
 } from "@/lib/dashboard-url";
 
-export const DEFAULT_SIGN_IN_RETURN = "/";
+export const DEFAULT_SIGN_IN_RETURN = DASHBOARD_PATH;
 export const AUTH_LOGIN_PATH = "/auth/login";
 export const AUTH_SIGN_UP_PATH = "/auth/sign-up";
 
 /**
  * Allow only same-app relative paths. Rejects external URLs, protocol-relative
- * (`//…`), backslashes, and `/auth/*` (avoids auth loops). Invalid → `/`.
+ * (`//…`), backslashes, and `/auth/*` (avoids auth loops). Invalid → dashboard.
  */
 export function sanitizeSignInReturn(
     candidate: string | null | undefined,
@@ -52,7 +52,7 @@ function searchToQueryString(
 }
 
 /**
- * Resolve **Sign-in return** from the current location. On `/dashboard`,
+ * Resolve **Sign-in return** from the current location. On the dashboard,
  * forces `resume=true` while keeping other query params.
  */
 export function resolveSignInReturnFromLocation(

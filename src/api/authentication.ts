@@ -1,7 +1,7 @@
 /**
  * @module api/authentication
  *
- * Provides all Supabase-backed authentication operations for the Proxima app:
+ * Provides all Supabase-backed authentication operations:
  * email/password sign-up, sign-in, sign-out, and password reset/update flows.
  * Every auth call includes an hCaptcha token to prevent automated abuse.
  *
@@ -129,7 +129,7 @@ export const signUpViaEmail = async (email: string, password: string, captchaTok
  */
 export const resetPassword = async (email: string, captchaToken: string) => {
     try {
-        await supabase.auth.resetPasswordForEmail(email, { captchaToken, redirectTo: 'https://app.proximafitness.com/password-recovery' });
+        await supabase.auth.resetPasswordForEmail(email, { captchaToken, redirectTo: `${window.location.origin}/auth/update-password` });
         return { status: "success", data: "Reset password email sent successfully" };
     } catch (error: unknown) {
         console.error("Error resetting password:", error);

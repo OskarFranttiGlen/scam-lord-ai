@@ -30,7 +30,7 @@ export const Button: React.FC<IProps> = (props) => {
             // onHoverStart={  => {} }
             // onHoverEnd={ e => {} }
             type="button"
-            className={`cursor-pointer px-4 font-main text-[18px] text-black bg-lightSecondary rounded-lg ${ styles } ` }
+            className={`cursor-pointer px-4 font-main text-[18px] text-primary-foreground bg-primary rounded-lg ${ styles } ` }
         >
             { text }
         </motion.button>

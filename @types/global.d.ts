@@ -787,7 +787,7 @@ declare global {
   // Interfaces
   /**********************************************************/
 
-  /** A Proxima Program in the Program Builder is defined as: */
+  /** A program in the Program Builder is defined as: */
   /***********************************************************/
 
   type TProgramCreatorDay = {

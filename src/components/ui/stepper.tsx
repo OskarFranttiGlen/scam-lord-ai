@@ -30,13 +30,13 @@ const Step: React.FC<IStepProps> = ({ title, description, isCompleted, isActive 
           className={cn(
             "w-6 h-6 max-sm:w-4 max-sm:h-4 rounded-full border flex items-center justify-center",
             isCompleted
-              ? "border-lightSecondary bg-lightSecondary text-white"
+              ? "border-primary bg-primary text-primary-foreground"
               : isActive
                 ? "border-primary"
                 : "border-muted",
           )}
         >
-          {isCompleted ? <Check className="w-3 h-3 max-sm:w-[10px] max-sm:h-[10px] bg-lightSecondary text-white" /> : <span className="text-xs max-sm:text-[9px] font-medium">{title[0]}</span>}
+          {isCompleted ? <Check className="w-3 h-3 max-sm:w-[10px] max-sm:h-[10px] bg-primary text-primary-foreground" /> : <span className="text-xs max-sm:text-[9px] font-medium">{title[0]}</span>}
         </div>
       </div>
       <div className="ml-2.5 max-sm:ml-1 max-sm:min-w-0">

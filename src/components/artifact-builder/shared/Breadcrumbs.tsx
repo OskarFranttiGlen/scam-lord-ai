@@ -1,8 +1,8 @@
 /**
  * @module Breadcrumbs
- * Hollow breadcrumb trail for the dashboard dual-pane (ADR 0034 / 01).
+ * Hollow breadcrumb trail for the builder dual-pane (ADR 0034 / 01).
  * Depends on: ui/breadcrumb.
- * Used by: dashboard layout / toolbar.
+ * Used by: (with-toolbar) layout / toolbar.
  */
 "use client";
 
@@ -14,29 +14,26 @@ import {
     BreadcrumbList,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { buildDashboardHref } from "@/lib/dashboard-url";
 
 export const Breadcrumbs: React.FC = () => {
-    const segments = usePathname().split("/").filter(Boolean);
+    const pathname = usePathname();
     const isBuilder =
-        segments.includes("dashboard") || segments.includes("dashboard");
+        pathname?.startsWith("/dashboard") === true;
 
     return (
         <Breadcrumb className="w-full max-sm:hidden">
             <BreadcrumbList>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                    <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                    {isBuilder ? (
+                        <BreadcrumbLink href={buildDashboardHref({ resume: true })}>
+                            Dashboard
+                        </BreadcrumbLink>
+                    ) : (
+                        <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                    )}
                 </BreadcrumbItem>
-                {isBuilder ? (
-                    <>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                            <BreadcrumbLink href="/dashboard?resume=true">
-                                Dashboard
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                    </>
-                ) : null}
             </BreadcrumbList>
         </Breadcrumb>
     );

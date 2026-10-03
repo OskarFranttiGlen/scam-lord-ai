@@ -656,7 +656,7 @@ const SidebarMenuButton = React.forwardRef<
           align="center"
           hidden={state !== "collapsed" || isMobile}
           className={cn(
-            "bg-lightSecondary text-white",
+            "bg-primary text-primary-foreground",
             tooltipClassName
           )}
           {...restTooltip}

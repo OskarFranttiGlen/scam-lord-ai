@@ -25,6 +25,7 @@ import * as Yup from "yup";
 import { useForm } from 'react-hook-form';
 import { yupResolver } from "@hookform/resolvers/yup";
 import { TurnstileSignUp } from './TurnstileSignUp';
+import { DASHBOARD_PATH } from '@/lib/dashboard-url';
 import { buildAuthLoginHrefFromNext } from '@/lib/sign-in-return';
 
 /** Props: div props plus optional redirectPath preserved for login link (Sign-in return). */
@@ -32,7 +33,7 @@ type TSignUpFormProps = React.ComponentPropsWithoutRef<'div'> & {
   redirectPath?: string;
 };
 
-export function SignUpForm({ className, redirectPath = '/', ...props }: TSignUpFormProps) {
+export function SignUpForm({ className, redirectPath = DASHBOARD_PATH, ...props }: TSignUpFormProps) {
 
     const [isLoading, setIsLoading] = useState(false)
     const [turnstileOpen, setTurnstileOpen] = useState(false);
@@ -105,7 +106,7 @@ export function SignUpForm({ className, redirectPath = '/', ...props }: TSignUpF
 
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
-      <Card className='bg-lightGray dark:bg-extraDarkGray dark:text-white'>
+      <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Sign up</CardTitle>
           <CardDescription>Create a new account</CardDescription>
@@ -120,7 +121,7 @@ export function SignUpForm({ className, redirectPath = '/', ...props }: TSignUpF
                     type="email"
                     name="email"
                     autoComplete="email"
-                    placeholder="lifter@proximafitness.com…"
+                    placeholder="you@example.com"
                     required
                     value={ watchEmail }
                     onInput={ (e) => {
@@ -246,7 +247,7 @@ export function SignUpForm({ className, redirectPath = '/', ...props }: TSignUpF
               </div>
               <Button
                 type="submit"
-                className="w-full bg-lightSecondary text-white"
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? 'Creating an account…' : 'Sign up'}

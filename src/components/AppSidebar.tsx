@@ -65,6 +65,7 @@ import { BUILDER_DRAFT_KEY, clearBuilderDraft } from "@/lib/builder-draft";
 import { deleteChatHistory, setChatPinned, updateChatTitle } from "@/api/chat-history";
 import { buildAuthLoginHref } from "@/lib/sign-in-return";
 import { buildDashboardHref } from "@/lib/dashboard-url";
+import { Logo } from "@/components/Logo";
 
 const CHAT_MESSAGES_KEY = "messages";
 
@@ -148,7 +149,9 @@ export function AppSidebar() {
     const searchParams = useSearchParams();
     const loginHref = buildAuthLoginHref(pathname, searchParams);
     const selectedChatId =
-        pathname?.startsWith("/dashboard") === true ? searchParams.get("chat") : null;
+        pathname?.startsWith("/dashboard") === true
+            ? searchParams.get("chat")
+            : null;
 
     const handleLogout = async () => {
         await signOutUser();
@@ -334,9 +337,11 @@ export function AppSidebar() {
                                 tooltip="Toggle sidebar"
                             >
                                 <PanelLeft className="shrink-0" />
-                                <span className="font-tertiary text-base font-bold tracking-tight text-foreground">
-                                    ScamLord
-                                </span>
+                                <Logo
+                                    size="nav"
+                                    showMark={false}
+                                    wordmarkClassName="group-data-[collapsible=icon]:hidden"
+                                />
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
@@ -566,7 +571,7 @@ export function AppSidebar() {
                 confirmLabel="Save"
                 confirmLoadingLabel="Saving…"
                 confirmVariant="default"
-                confirmClassName="bg-lightSecondary text-white hover:bg-lightSecondary/90"
+                confirmClassName=""
                 isConfirmLoading={isRenaming}
                 closeOnConfirm={false}
                 confirmDisabled={!renameDraft?.title.trim()}

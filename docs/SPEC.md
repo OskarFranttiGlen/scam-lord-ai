@@ -4,7 +4,7 @@
 
 ## Product
 
-ScamLord AI calls tenants about late rent, negotiates a plan inside the landlord’s limits, and collects the payment. It is for a property manager with many properties. When any invoice goes overdue, the agent starts itself.
+RentRecovery calls tenants about late rent, negotiates a plan inside the landlord’s limits, and collects the payment. It is for a property manager with many properties. When any invoice goes overdue, the agent starts itself.
 
 Stripe tells the agent who to call, the agent fixes the balance inside Stripe, and Stripe pays the landlord. We bill the landlord for collection outcomes. We do not keep a cut of the rent.
 

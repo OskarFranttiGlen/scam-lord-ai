@@ -1,19 +1,19 @@
-# Shipworthy
+# RentRecovery builder context
 
-Hackathon template: hero chat input dispatches into a builder with a chat panel and a structured **Chat artifact**. Domain-neutral agent loop. The demo artifact stays a week/day grid for now; a later pass may swap the shape.
+Hackathon app home (`/dashboard`): chat panel plus structured **Chat artifact** and **Agent floor**. The demo artifact stays a week/day grid for now; landlord portfolio screens come later per [docs/SPEC.md](docs/SPEC.md).
 
 ## Language
 
 ### Product
 
 
-**Shipworthy**
+**RentRecovery**
 
 
-The template product name shown on the hero and in UI chrome. Not Proxima.
+Product name in UI chrome.
 
 
-_Avoid_: Proxima, Proxima Fitness, Andy (as product name)
+_Avoid_: Shipworthy, Andy (as product name)
 
 
 
@@ -35,7 +35,7 @@ _Avoid_: Andy, Integrated training coach, personal trainer
 The structured object opposite the chat on **/dashboard**. For now it is a week/day grid of **Artifact day** columns; each day holds ordered **Artifact items** (title + optional notes)—not exercises or sets. The agent edits it through **Artifact CRUD tools**. A later pass may swap the grid shape.
 
 
-_Avoid_: Program prescription (Proxima term), workout program (as the template's product), treating chat transcript as the artifact
+_Avoid_: Program prescription, workout program (as the template's product), treating chat transcript as the artifact
 
 
 
@@ -65,7 +65,7 @@ _Avoid_: Exercise, set, lift, Hevy template row
 ### New arrival
 
 
-Entering **/dashboard** to create an artifact from the home prompt, typically with a `search=` dispatch (attachments optional). Homepage primary conversion. Chat bootstraps as today: the **Agent** starts a session and creates or edits the **Chat artifact** via **Artifact CRUD tools** only when that is appropriate. The default template has no product domain that forces an artifact or the **Questionnaire gate** to open.
+Entering **/** to create an artifact, typically with a `search=` dispatch (attachments optional). Chat bootstraps as today: the **Agent** starts a session and creates or edits the **Chat artifact** via **Artifact CRUD tools** only when that is appropriate. The default template has no product domain that forces an artifact or the **Questionnaire gate** to open.
 
 
 _Avoid_: Build program (route-shaped), home prompt (implementation-shaped), client-seeding an empty durable artifact before the agent acts
@@ -76,10 +76,10 @@ _Avoid_: Build program (route-shaped), home prompt (implementation-shaped), clie
 ### Arrival
 
 
-How the user landed on **/dashboard** (URL params + navigation source). Determines artifact hydration and chat session bootstrap.
+How the user landed on **/** (URL params + navigation source). Determines artifact hydration and chat session bootstrap.
 
 
-_Avoid_: Entry point (ambiguous), route, landing, treating /dashboard as an analytics overview
+_Avoid_: Entry point (ambiguous), route, landing, treating home as an analytics overview
 
 
 

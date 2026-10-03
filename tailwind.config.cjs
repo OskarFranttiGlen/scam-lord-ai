@@ -12,19 +12,36 @@ module.exports = {
   theme: {
   	extend: {
   		colors: {
-  			primary: '#1c1917',
+  			primary: {
+  				DEFAULT: 'hsl(var(--primary))',
+  				foreground: 'hsl(var(--primary-foreground))'
+  			},
+  			secondary: {
+  				DEFAULT: 'hsl(var(--secondary))',
+  				foreground: 'hsl(var(--secondary-foreground))'
+  			},
   			offWhite: 'oklch(70.8% 0 0)',
-  			lightSecondary: '#4ccd8c',
-  			secondary: '#2a9ba8',
+  			lightSecondary: 'hsl(var(--primary))',
   			lightGold: '#fbbf24',
-  			extraLightGray: '#fafaf9',
-  			lightGray: '#f5f5f4',
-			darkGray: '#292524',
-			midDarkGray: '#223a3d',
-			extraDarkGray: '#1c1917',
-  			blueGray: '#44403c',
+  			extraLightGray: 'hsl(var(--background))',
+  			lightGray: 'hsl(var(--muted))',
+			darkGray: 'hsl(var(--background))',
+			midDarkGray: 'hsl(var(--card))',
+			extraDarkGray: 'hsl(var(--card))',
+  			blueGray: 'hsl(var(--muted-foreground))',
   			dimWhite: 'rgba(255, 255, 255, 0.7)',
   			dimBlue: 'rgba(9, 151, 124, 0.1)',
+  			brand: {
+  				mint: 'hsl(var(--brand-mint))',
+  				ink: 'hsl(var(--on-mint))',
+  				violet: 'hsl(var(--brand-violet))'
+  			},
+  			status: {
+  				paid: { DEFAULT: 'hsl(var(--paid-bg))', foreground: 'hsl(var(--paid-ink))' },
+  				overdue: { DEFAULT: 'hsl(var(--overdue-bg))', foreground: 'hsl(var(--overdue-ink))' },
+  				waiting: { DEFAULT: 'hsl(var(--waiting-bg))', foreground: 'hsl(var(--waiting-ink))' },
+  				active: { DEFAULT: 'hsl(var(--active-bg))', foreground: 'hsl(var(--active-ink))' }
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -70,18 +87,22 @@ module.exports = {
   		},
   		fontFamily: {
   			main: [
-  				'Russo One'
+  				'var(--font-display)',
+  				'sans-serif'
   			],
   			second: [
-  				'Exo',
+  				'var(--font-sans)',
+  				'system-ui',
   				'sans-serif'
   			],
 			third: [
-				'Inter',
+				'var(--font-sans)',
+				'system-ui',
 				'sans-serif'
 			],
 			tertiary: [
-				'Inter',
+				'var(--font-sans)',
+				'system-ui',
 				'sans-serif'
 			]
   		},
