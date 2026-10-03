@@ -114,7 +114,10 @@ function requireLiveKitEnv(): void {
     process.exit(1);
 }
 
-requireLiveKitEnv();
+// The image build runs `download-files` without credentials.
+if (process.argv[2] !== "download-files") {
+    requireLiveKitEnv();
+}
 
 /**
  * True when `VOICE_TURN_DETECTION=vad` opts out of the audio end-of-turn model.
