@@ -1,8 +1,7 @@
-# dotenvx
-.env.keys
-.env.local
-.env.*.local
-.env.production
+# Secrets — never commit
+.env
+.env.*
+!.env.example
 
 # dependencies
 node_modules/
