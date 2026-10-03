@@ -67,5 +67,33 @@ describe("AgentView", () => {
         expect(screen.getByText("$0.00")).toBeTruthy();
         expect(screen.getByRole("button", { name: /back to floor/i })).toBeTruthy();
         expect(screen.queryByRole("textbox")).toBeNull();
+        expect(screen.getByText("Open balance")).toBeTruthy();
+    });
+
+    it("shows a payment-received success state", () => {
+        const agent: IAgent = {
+            id: "agent-paid",
+            tenant: "Mina Cho",
+            property: "4 Birch",
+            status: "paid",
+            currentStep: "paid",
+            invoice: {
+                amount: 0,
+                status: "paid",
+                dueDate: "2026-08-28",
+                hostedUrl: "https://pay.stripe.test/paid",
+            },
+            schedule: { installments: 1, dates: ["2026-08-28"], amounts: [960] },
+            outcomes: { callPlaced: true, planAccepted: true, paymentCleared: true },
+            policy: { maxInstallments: 2, graceDays: 14, feeWaiverCap: 0 },
+            perks: [],
+            trace: { transcript: [], perkId: null, plan: "1 x 960", jev: [] },
+        };
+
+        render(<AgentView agent={agent} onBack={() => undefined} />);
+
+        expect(screen.getByText("Payment received")).toBeTruthy();
+        expect(screen.getByText("Paid")).toBeTruthy();
+        expect(screen.queryByText("Open balance")).toBeNull();
     });
 });

@@ -6,6 +6,7 @@
  */
 
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { IFloorNodeData } from "./build-floor-graph";
 
@@ -31,9 +32,11 @@ export function StepNode({ data }: NodeProps<Node<IFloorNodeData>>) {
             aria-current={ data.current ? "step" : undefined }
             className={cn(
                 "min-w-[9.5rem] rounded-md border bg-card px-3 py-2 text-left shadow-sm",
-                data.current
-                    ? "border-2 border-ring font-semibold"
-                    : "border-border",
+                data.success
+                    ? "border-2 border-status-paid bg-status-paid font-semibold text-status-paid-foreground"
+                    : data.current
+                        ? "border-2 border-ring font-semibold"
+                        : "border-border",
                 flashing && "animate-pulse motion-reduce:animate-none",
             )}
         >
@@ -42,10 +45,19 @@ export function StepNode({ data }: NodeProps<Node<IFloorNodeData>>) {
                 position={Position.Left}
                 className="!h-2.5 !w-2.5 !border !border-border !bg-muted-foreground"
             />
-            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <p className={cn(
+                "text-[10px] font-medium uppercase tracking-wide",
+                data.success ? "text-status-paid-foreground" : "text-muted-foreground",
+            )}>
                 {data.tenant}
             </p>
-            <p className="mt-0.5 text-xs text-card-foreground">{data.label}</p>
+            <p className={cn(
+                "mt-0.5 flex items-center gap-1 text-xs",
+                data.success ? "text-status-paid-foreground" : "text-card-foreground",
+            )}>
+                {data.success ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden /> : null}
+                {data.label}
+            </p>
             { flashing ? (
                 <span className="sr-only" aria-live="polite">
                     { data.label } is the current step

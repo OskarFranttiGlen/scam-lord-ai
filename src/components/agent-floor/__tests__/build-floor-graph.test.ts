@@ -56,6 +56,14 @@ describe("buildFloorGraph", () => {
         expect(edges.every((edge) => edge.type === "straight")).toBe(true);
     });
 
+    it("marks a received payment as success on the paid step", () => {
+        const paid = agent("agent-paid", "paid");
+        paid.status = "paid";
+        const graph = buildFloorGraph([paid]);
+        expect(graph.nodes.find((node) => node.id === "agent-paid:paid")?.data.success).toBe(true);
+        expect(graph.nodes.filter((node) => node.data.success)).toHaveLength(1);
+    });
+
     it("places the chain head at x = 0", () => {
         expect(nodes[0]?.position.x).toBe(0);
         expect(nodes[0]?.id.endsWith(":invoice")).toBe(true);
