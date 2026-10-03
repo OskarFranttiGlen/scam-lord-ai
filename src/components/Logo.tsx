@@ -73,14 +73,12 @@ export function Logo({
                 />
             )}
             {showWordmark ? (
-                <div className={cn("min-w-0", wordmarkClassName)}>
-                    <p
-                        className="font-main leading-none"
-                        style={{ fontSize: wordmarkPx, letterSpacing: size === "xl" ? "-2px" : size === "lg" ? "-1px" : undefined }}
-                    >
-                        RentRecovery
-                    </p>
-                </div>
+                <span
+                    className={cn("font-main leading-none", wordmarkClassName)}
+                    style={{ fontSize: wordmarkPx, letterSpacing: size === "xl" ? "-2px" : size === "lg" ? "-1px" : undefined }}
+                >
+                    RentRecovery
+                </span>
             ) : null}
         </div>
     );
