@@ -18,11 +18,18 @@ function asDb(mock: unknown): TVoiceSupabaseClient {
 function recordingDb() {
     const upserts: TablesInsert<"calls">[] = [];
     const maintenanceRows: TablesInsert<"maintenance_requests">[] = [];
+    const officeTaskRows: TablesInsert<"office_tasks">[] = [];
     const db = {
         from: vi.fn((table: string) => ({
-            upsert: (row: TablesInsert<"calls"> | TablesInsert<"maintenance_requests">[]) => {
+            upsert: (
+                row: TablesInsert<"calls"> | TablesInsert<"maintenance_requests">[] | TablesInsert<"office_tasks">[],
+            ) => {
                 if (table === "maintenance_requests" && Array.isArray(row)) {
-                    maintenanceRows.push(...row);
+                    maintenanceRows.push(...(row as TablesInsert<"maintenance_requests">[]));
+                    return Promise.resolve({ error: null });
+                }
+                if (table === "office_tasks" && Array.isArray(row)) {
+                    officeTaskRows.push(...(row as TablesInsert<"office_tasks">[]));
                     return Promise.resolve({ error: null });
                 }
                 if (!Array.isArray(row) && "stripe_invoice_id" in row) {
@@ -32,13 +39,13 @@ function recordingDb() {
             },
         })),
     };
-    return { db: asDb(db), upserts, maintenanceRows };
+    return { db: asDb(db), upserts, maintenanceRows, officeTaskRows };
 }
 
 const quietLog = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
 
 function persist(state: CallState, extra: Partial<Parameters<typeof persistCall>[0]> = {}) {
-    const { db, upserts, maintenanceRows } = recordingDb();
+    const { db, upserts, maintenanceRows, officeTaskRows } = recordingDb();
     const result = persistCall({
         roomName: "callback-1",
         callContext: getDemoCallContext(),
@@ -50,8 +57,39 @@ function persist(state: CallState, extra: Partial<Parameters<typeof persistCall>
         log: quietLog,
         ...extra,
     });
-    return { result, upserts, maintenanceRows };
+    return { result, upserts, maintenanceRows, officeTaskRows };
 }
+
+describe("persistCall office tasks", () => {
+    it("saves each office task opened on the call, linked to the call, tenancy, and invoice", async () => {
+        const state: CallState = {
+            ...createInitialCallState(),
+            feedbackRecorded: true,
+            officeTasks: [{
+                id: "7b2e5c74-ac0a-4ea0-9c73-2d2a3e4f5061",
+                type: "payment_match",
+                details: "Says paid by Zelle on Oct 1",
+                dueDate: "2026-10-04",
+                collectionPausedUntil: "2026-10-04",
+            }],
+        };
+
+        const { result, officeTaskRows } = persist(state);
+
+        await result;
+        expect(officeTaskRows).toEqual([{
+            id: "7b2e5c74-ac0a-4ea0-9c73-2d2a3e4f5061",
+            tenancy_id: TENANCY_ID,
+            source_call_id: "call-1",
+            stripe_invoice_id: getDemoCallContext().stripeInvoiceId,
+            type: "payment_match",
+            details: "Says paid by Zelle on Oct 1",
+            due_date: "2026-10-04",
+            collection_paused_until: "2026-10-04",
+            status: "open",
+        }]);
+    });
+});
 
 describe("persistCall check-in", () => {
     it("stores the check-in feedback and an urgent-repair handoff reason", async () => {

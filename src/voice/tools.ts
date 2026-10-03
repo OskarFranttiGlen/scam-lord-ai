@@ -13,6 +13,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
+import { OFFICE_TASK_TYPES, blocksPayment, pausesCollection, tomorrowIsoDate } from "@/collection/office-tasks";
 import { checkPolicy } from "@/collection/policy";
 import type { TPaymentPlan, TPerk, TPolicy, TPolicyResult, TSignalDecision } from "@/collection/types";
 import { sendSms } from "@/messaging/sms";
@@ -285,6 +286,13 @@ export function getCollectionTools(
                     say: `Thanks for bearing with me. Someone from ${ctx.propertyName} will follow up with you personally.`,
                 };
             }
+            if (state.officeTasks.some(task => blocksPayment(task.type))) {
+                return {
+                    status: "office_check_pending",
+                    say: "The office is checking that first, so I won't ask you to pay anything until they get back "
+                        + "to you by tomorrow.",
+                };
+            }
 
             const result = runPolicy(ctx, plan);
             if (result.status !== "accepted") {
@@ -317,6 +325,33 @@ export function getCollectionTools(
                 say: `You're all set for ${spokenSchedule(result.plan, todayIsoDate())}, `
                     + "and the secure payment link is on its way by text and email."
                     + (perk ? ` As a thank you, ${perk.description}.` : ""),
+            };
+        },
+    });
+
+    const createOfficeTaskTool = tool({
+        description: "Open a follow-up for the property office, due tomorrow. Use for: payment_match (they say they "
+            + "already paid), disputed_line (a specific charge looks wrong), assistance_paperwork (rental assistance "
+            + "applied or applying), tenant_portion (Section 8 or a program pays part), move_out_deposit (gave notice, "
+            + "asks about the deposit), confirm_claim (says a manager agreed something not on record), urgent_repair "
+            + "(rent held over a repair), lease_change (roommate left), tenancy_at_risk (rent no longer affordable).",
+        inputSchema: z.object({
+            type: z.enum(OFFICE_TASK_TYPES),
+            details: z.string().min(1).describe("One factual line for the office: what the tenant said, dates, amounts"),
+        }),
+        execute: async ({ type, details }) => {
+            const dueDate = tomorrowIsoDate();
+            state.officeTasks.push({
+                id: crypto.randomUUID(),
+                type,
+                details: details.trim(),
+                dueDate,
+                collectionPausedUntil: pausesCollection(type) ? dueDate : null,
+            });
+            deps.onStateChange?.(state);
+            return {
+                status: "opened",
+                next: "Tell them the office will check it and get back to them by tomorrow. Never promise the outcome.",
             };
         },
     });
@@ -387,6 +422,7 @@ export function getCollectionTools(
     return {
         record_feedback: recordFeedbackTool,
         record_closing_feedback: recordClosingFeedbackTool,
+        create_office_task: createOfficeTaskTool,
         send_assistance_referral: sendAssistanceReferralTool,
         check_policy: checkPolicyTool,
         accept_plan: acceptPlanTool,

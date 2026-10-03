@@ -54,6 +54,33 @@ async function hasActiveCall(db: SupabaseClient | null, invoiceId: string): Prom
     return Array.isArray(data) && data.length > 0;
 }
 
+/**
+ * Latest date an open office task pauses collection on the invoice, when that date is still
+ * ahead of today (UTC); otherwise null.
+ *
+ * @param db - Service-role Supabase client, or null without Supabase
+ * @param invoiceId - Stripe invoice id
+ */
+async function collectionPausedUntil(db: SupabaseClient | null, invoiceId: string): Promise<string | null> {
+    if (!db) {
+        return null;
+    }
+    const { data, error } = await db
+        .from("office_tasks")
+        .select("collection_paused_until")
+        .eq("stripe_invoice_id", invoiceId)
+        .eq("status", "open");
+    if (error || !Array.isArray(data)) {
+        return null;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const ahead = data
+        .map((row: { collection_paused_until: string | null }) => row.collection_paused_until)
+        .filter((date): date is string => typeof date === "string" && date > today)
+        .sort();
+    return ahead.at(-1) ?? null;
+}
+
 async function retrieveCustomer(stripe: Stripe, invoice: Stripe.Invoice): Promise<Stripe.Customer | null> {
     const customer = invoice.customer;
     if (customer == null) {
@@ -85,6 +112,10 @@ async function startCallForInvoice(
     }
     if (await hasActiveCall(deps.db, invoice.id)) {
         return { action: "skipped", reason: "a call for this invoice is already active" };
+    }
+    const pausedUntil = await collectionPausedUntil(deps.db, invoice.id);
+    if (pausedUntil) {
+        return { action: "skipped", reason: `collection is paused until ${pausedUntil} for an office check` };
     }
 
     const customer = await retrieveCustomer(deps.stripe, invoice);

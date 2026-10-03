@@ -1,6 +1,6 @@
 // @vitest-environment node
 import type Stripe from "stripe";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { handleStripeEvent, type TStripeWebhookDeps } from "../webhook-events";
 import { createSupabaseMock } from "./supabase-mock";
@@ -104,6 +104,48 @@ describe("handleStripeEvent", () => {
 
         expect(outcome).toEqual({ action: "skipped", reason: "a call for this invoice is already active" });
         expect(d.startCollectionCall).not.toHaveBeenCalled();
+    });
+
+    describe("with an open office task on the invoice", () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date("2026-10-03T20:00:00.000Z"));
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it("does not call while the office check pauses collection", async () => {
+            const { db } = createSupabaseMock({
+                office_tasks: { data: [{ collection_paused_until: "2026-10-04" }], error: null },
+            });
+            const d = deps({ db });
+
+            const outcome = await handleStripeEvent(asEvent({
+                id: "evt_pause_1",
+                type: "invoice.overdue",
+                data: { object: openInvoice() },
+            }), d);
+
+            expect(outcome).toEqual({ action: "skipped", reason: "collection is paused until 2026-10-04 for an office check" });
+            expect(d.startCollectionCall).not.toHaveBeenCalled();
+        });
+
+        it("calls again once the pause date arrives", async () => {
+            const { db } = createSupabaseMock({
+                office_tasks: { data: [{ collection_paused_until: "2026-10-03" }], error: null },
+            });
+            const d = deps({ db });
+
+            const outcome = await handleStripeEvent(asEvent({
+                id: "evt_pause_2",
+                type: "invoice.overdue",
+                data: { object: openInvoice() },
+            }), d);
+
+            expect(outcome.action).toBe("call_started");
+        });
     });
 
     it("marks the call paid on invoice.paid", async () => {

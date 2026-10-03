@@ -372,6 +372,11 @@ export function buildNegotiationInstructions(
         "6. Only say a payment went through when confirm_payment says so.",
         "7. If the tenant mentions hardship, a dispute, or distress, do not push; say someone from the property "
             + "will follow up.",
+        "8. When something needs the office to check, call create_office_task once and say the office will get back "
+            + "to them by tomorrow: they say they already paid (payment_match; send no link), a specific charge looks "
+            + "wrong (disputed_line), a program like Section 8 pays part (tenant_portion), they gave notice and ask "
+            + "about the deposit (move_out_deposit), or they say a manager agreed something you have no record of "
+            + "(confirm_claim; the balance still stands).",
         "",
         buildCallFacts(ctx, channel),
     ].join("\n");
@@ -476,13 +481,16 @@ export function buildPlaybookInstructions(
                 + "Never say they qualify or will be approved; funding is limited.",
             "- Call send_assistance_referral to text sf.gov/renthelp and the helpline (four one five, six five three, five seven four four).",
             "- If they can pay nothing today, text the referral, set a check-in date about a week out, and do not push a plan they will miss.",
+            "- If they already applied for assistance, or will, call create_office_task with assistance_paperwork so the office sends the program what it needs.",
+            "- Roommate left: create_office_task with lease_change. Rent no longer affordable: create_office_task with tenancy_at_risk. Never raise moving out.",
         ],
         dispute: [
             "DISPUTE PLAYBOOK:",
             "- Believe them first. Do not argue the ledger.",
-            "- Already paid (D1): ask how and when; ask for a receipt photo; open a matching task for tomorrow; send no payment link until matched.",
-            "- Wrong amount (D2): walk rent vs late fee; take payment on the part they agree with today.",
-            "- Withholding for repairs (D4): log urgent repair; property contacts them by tomorrow; do not comment on rent withholding legality.",
+            "- Already paid (D1): ask how and when; ask for a receipt photo; call create_office_task with payment_match; send no payment link until matched.",
+            "- Wrong amount (D2): walk rent vs late fee; call create_office_task with disputed_line naming the charge.",
+            "- Withholding for repairs (D4): call create_office_task with urgent_repair; the property contacts them by tomorrow; do not comment on rent withholding legality.",
+            "- Section 8 pays part (D8): tenant_portion. Deposit after notice (D7): move_out_deposit. A manager agreed something not on record (G2): confirm_claim.",
         ],
         distressed: [
             "DISTRESS PLAYBOOK:",

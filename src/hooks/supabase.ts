@@ -107,6 +107,63 @@ export type Database = {
                     },
                 ];
             };
+            office_tasks: {
+                Row: {
+                    collection_paused_until: string | null;
+                    created_at: string;
+                    details: string;
+                    due_date: string;
+                    id: string;
+                    source_call_id: string | null;
+                    status: string;
+                    stripe_invoice_id: string | null;
+                    tenancy_id: string;
+                    type: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    collection_paused_until?: string | null;
+                    created_at?: string;
+                    details: string;
+                    due_date: string;
+                    id?: string;
+                    source_call_id?: string | null;
+                    status?: string;
+                    stripe_invoice_id?: string | null;
+                    tenancy_id: string;
+                    type: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    collection_paused_until?: string | null;
+                    created_at?: string;
+                    details?: string;
+                    due_date?: string;
+                    id?: string;
+                    source_call_id?: string | null;
+                    status?: string;
+                    stripe_invoice_id?: string | null;
+                    tenancy_id?: string;
+                    type?: string;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "office_tasks_source_call_id_fkey";
+                        columns: ["source_call_id"];
+                        isOneToOne: false;
+                        referencedRelation: "calls";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "office_tasks_tenancy_id_fkey";
+                        columns: ["tenancy_id"];
+                        isOneToOne: false;
+                        referencedRelation: "tenancies";
+                        referencedColumns: ["id"];
+                    },
+                ];
+            };
             maintenance_requests: {
                 Row: {
                     appointment_label: string | null;

@@ -4,14 +4,18 @@
 import { describe, expect, it } from "vitest";
 
 import type { TJevCheckRecord } from "@/collection/types";
+import type { TablesInsert } from "@/hooks/supabase";
 import {
     buildTextRowUpdate,
     phoneCandidates,
     resumeTextState,
+    saveTextConversation,
     toE164,
     type TStoredCallRow,
 } from "@/text/conversation-store";
 import { createInitialCallState } from "@/voice/context";
+import { getDemoCallContext } from "@/voice/demo-context";
+import type { TVoiceSupabaseClient } from "@/voice/supabase-client";
 
 const HARDSHIP_CHECK: TJevCheckRecord = {
     transcript: "Tenant: I lost my job last week",
@@ -27,6 +31,10 @@ const HARDSHIP_CHECK: TJevCheckRecord = {
     evaluatedAt: "2026-10-03T18:00:00Z",
     model: "typesafe-ai/jev",
 };
+
+function asDb(mock: unknown): TVoiceSupabaseClient {
+    return mock as TVoiceSupabaseClient;
+}
 
 /**
  * A `calls` row as the store reads it.
@@ -103,6 +111,52 @@ describe("resumeTextState", () => {
         const resumed = resumeTextState([row({ channel: "text", conversation: { messages: [{ role: "robot" }] } })]);
 
         expect(resumed.messages).toEqual([]);
+    });
+});
+
+describe("saveTextConversation", () => {
+    it("saves office tasks opened in the thread, linked to the thread and invoice", async () => {
+        const officeTaskRows: TablesInsert<"office_tasks">[] = [];
+        const db = asDb({
+            from: (table: string) => ({
+                update: () => ({ eq: () => Promise.resolve({ error: null }) }),
+                upsert: (rows: TablesInsert<"office_tasks">[]) => {
+                    if (table === "office_tasks") {
+                        officeTaskRows.push(...rows);
+                    }
+                    return Promise.resolve({ error: null });
+                },
+            }),
+        });
+        const state = {
+            ...createInitialCallState(),
+            officeTasks: [{
+                id: "8c3f6d85-bd1b-4fb1-8d84-3e3b4f506172",
+                type: "disputed_line" as const,
+                details: "Says the late fee was already waived in September",
+                dueDate: "2026-10-04",
+                collectionPausedUntil: "2026-10-04",
+            }],
+        };
+
+        await saveTextConversation(db, {
+            callId: "call_text",
+            tenancyId: "tenancy_1",
+            context: { ...getDemoCallContext(), stripeInvoiceId: "in_text" },
+            messages: [],
+            state,
+            status: "in_progress",
+            carriedHandoffReason: null,
+        }, { messages: [], state });
+
+        expect(officeTaskRows).toEqual([expect.objectContaining({
+            id: "8c3f6d85-bd1b-4fb1-8d84-3e3b4f506172",
+            tenancy_id: "tenancy_1",
+            source_call_id: "call_text",
+            stripe_invoice_id: "in_text",
+            type: "disputed_line",
+            collection_paused_until: "2026-10-04",
+        })]);
     });
 });
 

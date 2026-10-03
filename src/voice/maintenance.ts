@@ -3,7 +3,7 @@
  *
  * Supabase side of the check-in (docs/SPEC.md): a tenancy's past maintenance requests for the
  * agent's context, whether the tenant already gave feedback recently, and saving the repairs
- * raised in a conversation as `maintenance_requests` rows.
+ * and office tasks raised in a conversation as `maintenance_requests` and `office_tasks` rows.
  *
  * Depends on: @/hooks/supabase, ./context, ./supabase-client
  * Used by: @/voice/persist-call.ts, @/voice/worker.ts, @/text/conversation-store.ts
@@ -11,7 +11,7 @@
 
 import type { TablesInsert } from "@/hooks/supabase";
 
-import type { CallState, TMaintenanceReport, TMaintenanceRequest } from "./context";
+import type { CallState, TMaintenanceReport, TMaintenanceRequest, TOfficeTask } from "./context";
 import { getVoiceSupabaseClient, type TVoiceSupabaseClient } from "./supabase-client";
 
 /** How recent earlier feedback must be for a callback or text thread to skip the check-in. */
@@ -114,6 +114,44 @@ export async function loadCheckInContext(input: {
         return { maintenanceRequests, recentFeedback };
     } catch {
         return { recentFeedback: false };
+    }
+}
+
+/**
+ * Upserts the office tasks opened in a conversation (idempotent on the task id).
+ *
+ * @param client - Service-role Supabase client
+ * @param input.tenancyId - Tenancy row id
+ * @param input.callId - Conversation `calls.id` the tasks came from
+ * @param input.stripeInvoiceId - Invoice a pausing task holds collection on
+ * @param input.tasks - Tasks from agent state
+ */
+export async function saveOfficeTasks(
+    client: TVoiceSupabaseClient,
+    { tenancyId, callId, stripeInvoiceId, tasks }: {
+        tenancyId: string;
+        callId: string;
+        stripeInvoiceId: string;
+        tasks: TOfficeTask[];
+    },
+): Promise<void> {
+    if (!tasks.length) {
+        return;
+    }
+    const rows: TablesInsert<"office_tasks">[] = tasks.map(task => ({
+        id: task.id,
+        tenancy_id: tenancyId,
+        source_call_id: callId,
+        stripe_invoice_id: stripeInvoiceId,
+        type: task.type,
+        details: task.details,
+        due_date: task.dueDate,
+        collection_paused_until: task.collectionPausedUntil,
+        status: "open",
+    }));
+    const { error } = await client.from("office_tasks").upsert(rows, { onConflict: "id", ignoreDuplicates: true });
+    if (error) {
+        throw new Error(`office_tasks write failed: ${error.message}`);
     }
 }
 

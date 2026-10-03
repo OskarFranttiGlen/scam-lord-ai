@@ -21,7 +21,13 @@ import { loadTenancyRecord } from "@/payments/collection-context";
 import { centsToDollars, getStripeClient } from "@/payments/stripe";
 import { normalizeCallState, type CallContext, type CallState, type TAcceptedPlan } from "@/voice/context";
 import { getDemoCallContext } from "@/voice/demo-context";
-import { handoffReasonFor, hasRecentFeedback, loadMaintenanceHistory, saveMaintenanceReports } from "@/voice/maintenance";
+import {
+    handoffReasonFor,
+    hasRecentFeedback,
+    loadMaintenanceHistory,
+    saveMaintenanceReports,
+    saveOfficeTasks,
+} from "@/voice/maintenance";
 import type { TVoiceSupabaseClient } from "@/voice/supabase-client";
 
 export type THandoffReason = "hardship" | "dispute" | "distressed" | "urgent_maintenance";
@@ -420,5 +426,11 @@ export async function saveTextConversation(
         tenancyId: conversation.tenancyId,
         callId: conversation.callId,
         reports: update.state.maintenanceReports,
+    });
+    await saveOfficeTasks(db, {
+        tenancyId: conversation.tenancyId,
+        callId: conversation.callId,
+        stripeInvoiceId: conversation.context.stripeInvoiceId,
+        tasks: update.state.officeTasks,
     });
 }

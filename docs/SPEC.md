@@ -53,6 +53,7 @@ Stripe holds the money. There is no balance column in Supabase. The open amount 
 | `calls` | Tenancy, channel (outbound call, callback, or text), Stripe invoice id, status, transcript, Jev probabilities, handoff reason, Twilio id, Resend id, photo path, Gemini summary | Agents |
 | `plans` | Installments, dates, amounts, waiver, `perk_id`, Stripe installment invoice ids, `call_id` | Policy code, then the Stripe toolkit |
 | `maintenance_requests` | Repairs per tenancy: description, status, urgency, optional appointment window, source call | Agents during check-in |
+| `office_tasks` | Follow-ups for the office: type, details, due date, `collection_paused_until`, Stripe invoice id, source call, status | Agents during a conversation |
 
 Row level security is on. The landlord’s browser session sees only their rows. Agents use the Supabase secret key on the server. That key is not in the dashboard.
 
@@ -70,9 +71,11 @@ Row level security is on. The landlord’s browser session sees only their rows.
 
 Speech is one or two sentences. No JSON, ids, probabilities, or tool names.
 
-Tools on the `ToolLoopAgent`: `record_feedback`, `record_closing_feedback`, `send_assistance_referral`, `check_policy`, `accept_plan`, `confirm_payment`, `read_photo`. Jev is not a tool; it runs on every turn. `check_policy` and `accept_plan` stay locked until `record_feedback` runs on outbound calls and new text threads.
+Tools on the `ToolLoopAgent`: `record_feedback`, `record_closing_feedback`, `create_office_task`, `send_assistance_referral`, `check_policy`, `accept_plan`, `confirm_payment`, `read_photo`. Jev is not a tool; it runs on every turn. `check_policy` and `accept_plan` stay locked until `record_feedback` runs on outbound calls and new text threads.
 
-Scenario tables and office tasks from the Oct 2026 playbook (Chuck Hattemer) are the design target; office tasks and invoice pause are not built yet.
+`create_office_task` opens a follow-up due tomorrow; code sets the date. Types: `payment_match`, `disputed_line`, `assistance_paperwork`, `tenant_portion`, `move_out_deposit`, `confirm_claim`, `urgent_repair`, `lease_change`, `tenancy_at_risk`. While a `payment_match` or `disputed_line` task is open, `accept_plan` refuses and no payment link goes out. The first six types also pause collection: the Stripe webhook does not start a new call on that invoice before `collection_paused_until`.
+
+The scenario tables from the Oct 2026 playbook (Chuck Hattemer) are the design target.
 
 ## Text
 

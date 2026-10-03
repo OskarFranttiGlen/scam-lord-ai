@@ -9,6 +9,7 @@
 
 import type { TJevCheckRecord, TJevPlaybook } from "@/collection/types";
 import { parseStopCase } from "@/collection/apply-signals";
+import { OFFICE_TASK_TYPES, type TOfficeTaskType } from "@/collection/office-tasks";
 import type { TStopCase } from "@/collection/stop-cases";
 
 /** Landlord numeric limits (one row per landlord in Supabase). */
@@ -34,6 +35,17 @@ export type TMaintenanceRequest = {
     resolvedAt: string | null;
     /** Spoken window when status is scheduled, e.g. "Thursday between 9 and 12". */
     appointmentLabel?: string | null;
+};
+
+/** A follow-up the agent opened for the office during this conversation (`office_tasks` row). */
+export type TOfficeTask = {
+    /** Row id, so re-saving the conversation does not duplicate the task. */
+    id: string;
+    type: TOfficeTaskType;
+    details: string;
+    dueDate: string;
+    /** No new collection call on this invoice before this date; null when the task does not pause. */
+    collectionPausedUntil: string | null;
 };
 
 /** A repair the tenant raised during this conversation; `id` is the row id it is saved under. */
@@ -94,6 +106,7 @@ export type CallState = {
     stopCase?: TStopCase;
     /** Closing satisfaction score 1–5, from record_closing_feedback. */
     satisfactionScore?: number;
+    officeTasks: TOfficeTask[];
 };
 
 /**
@@ -109,6 +122,7 @@ export function createInitialCallState(): CallState {
         maintenanceReports: [],
         urgentMaintenance: false,
         personRequestCount: 0,
+        officeTasks: [],
     };
 }
 
@@ -165,5 +179,15 @@ export function normalizeCallState(value: unknown): CallState {
         personRequestCount: typeof raw.personRequestCount === "number" ? raw.personRequestCount : 0,
         stopCase: parseStopCase(raw.stopCase),
         satisfactionScore: typeof raw.satisfactionScore === "number" ? raw.satisfactionScore : undefined,
+        officeTasks: Array.isArray(raw.officeTasks)
+            ? raw.officeTasks.filter((task): task is TOfficeTask => (
+                task != null
+                && typeof task === "object"
+                && OFFICE_TASK_TYPES.includes((task as TOfficeTask).type)
+                && typeof (task as TOfficeTask).id === "string"
+                && typeof (task as TOfficeTask).details === "string"
+                && typeof (task as TOfficeTask).dueDate === "string"
+            ))
+            : [],
     };
 }

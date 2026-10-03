@@ -13,7 +13,7 @@
 import type { Json, TablesInsert } from "@/hooks/supabase";
 
 import type { CallContext, CallState, TAcceptedPlan } from "./context";
-import { handoffReasonFor, saveMaintenanceReports } from "./maintenance";
+import { handoffReasonFor, saveMaintenanceReports, saveOfficeTasks } from "./maintenance";
 import { getVoiceSupabaseClient, type TVoiceSupabaseClient } from "./supabase-client";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -178,6 +178,12 @@ export async function persistCall(input: TPersistCallInput): Promise<TPersistCal
 
         const planId = state.acceptedPlan ? await upsertPlan(client, data.id, state.acceptedPlan) : null;
         await saveMaintenanceReports(client, { tenancyId, callId: data.id, reports: state.maintenanceReports });
+        await saveOfficeTasks(client, {
+            tenancyId,
+            callId: data.id,
+            stripeInvoiceId: callContext.stripeInvoiceId,
+            tasks: state.officeTasks,
+        });
         log.info(
             `[voice/persist-call] saved call ${data.id} for room ${roomName} `
             + `(${state.transcriptLines.length} transcript lines, ${state.jevChecks.length} Jev checks`
