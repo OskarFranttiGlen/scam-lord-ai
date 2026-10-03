@@ -37,5 +37,10 @@ yarn-error.log*
 # local domain docs / ADRs
 docs/
 
+# leftover / local-only artifacts
+firebase.json
+next.openapi.json
+plans/
+
 # Sample Workspace scrape staging (real logins / bodies)
 data/sample-workspace/raw/
