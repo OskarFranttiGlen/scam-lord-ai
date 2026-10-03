@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { StatusBadge, type TStatus } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { buildFloorGraph } from "./build-floor-graph";
+import { FloorNav } from "./FloorNav";
 import {
     FLOOR_MAX_ZOOM,
     FLOOR_MIN_ZOOM,
@@ -116,6 +117,7 @@ export function AgentView({ agent, onBack }: IProps) {
                     maxZoom={FLOOR_MAX_ZOOM}
                 >
                     <Background />
+                    <FloorNav />
                 </ReactFlow>
             </div>
 

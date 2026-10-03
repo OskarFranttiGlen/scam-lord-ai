@@ -13,6 +13,7 @@ import "@xyflow/react/dist/style.css";
 import { DEFAULT_AGENTS } from "@/lib/agent-floor/agents";
 import { buildFloorGraph } from "./build-floor-graph";
 import { AgentView } from "./AgentView";
+import { FloorNav } from "./FloorNav";
 import {
     FLOOR_MAX_ZOOM,
     FLOOR_MIN_ZOOM,
@@ -52,6 +53,7 @@ export function AgentFloor() {
                 maxZoom={ FLOOR_MAX_ZOOM }
             >
                 <Background />
+                <FloorNav />
             </ReactFlow>
         </div>
     );
