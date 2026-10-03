@@ -1,6 +1,6 @@
 /**
  * @module landlord-home/stripe-metrics
- * Recovered, still overdue, promised, and median minutes from Stripe Sync invoices.
+ * Home tiles from Stripe Sync invoices and the calls that worked them.
  * Depends on: calls.stripe_invoice_id, stripe.invoices (coworker schema).
  * Used by: use-home-metrics.
  */
@@ -17,32 +17,99 @@ export interface ISyncedInvoice {
 }
 
 export interface ICallTiming {
+    invoiceId?: string | null;
+    status?: string | null;
     startedAt: string | null;
     endedAt: string | null;
+    createdAt?: string | null;
 }
 
 export interface IHomeMetrics {
     recovered: number | null;
     stillOverdue: number | null;
     promised: number | null;
-    medianMinutes: number | null;
+    /** Paid cents / charge cents. Null when nothing was charged or sync is missing. */
+    collectionRate: number | null;
+    /** Minutes from the first touch to the call marked paid. */
+    medianResolutionMinutes: number | null;
+    /** Mean call rows on invoices that were collected. */
+    averageTouches: number | null;
 }
 
 const SKIPPED = new Set(["void", "draft"]);
 
-function medianMinutes(calls: readonly ICallTiming[]): number | null {
-    const minutes: number[] = [];
-    for (const call of calls) {
-        if (!call.startedAt || !call.endedAt) continue;
-        const started = Date.parse(call.startedAt);
-        const ended = Date.parse(call.endedAt);
-        if (Number.isNaN(started) || Number.isNaN(ended) || ended < started) continue;
-        minutes.push((ended - started) / 60_000);
+function timestamp(value: string | null | undefined): number | null {
+    if (!value) return null;
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? null : parsed;
+}
+
+function median(values: number[]): number | null {
+    if (values.length === 0) return null;
+    const sorted = values.toSorted((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** Rent collected divided by charges. A charge is paid plus still on the invoice. */
+function collectionRate(invoices: readonly ISyncedInvoice[]): number | null {
+    let paidCents = 0;
+    let chargeCents = 0;
+    for (const invoice of uniqueInvoices(invoices)) {
+        if (invoice.status != null && SKIPPED.has(invoice.status)) continue;
+        paidCents += invoice.amountPaidCents;
+        chargeCents += invoice.amountPaidCents + invoice.amountRemainingCents;
     }
-    if (minutes.length === 0) return null;
-    minutes.sort((a, b) => a - b);
-    const mid = Math.floor(minutes.length / 2);
-    return minutes.length % 2 === 1 ? minutes[mid] : (minutes[mid - 1] + minutes[mid]) / 2;
+    if (chargeCents <= 0) return null;
+    return paidCents / chargeCents;
+}
+
+function effort(calls: readonly ICallTiming[], invoices: readonly ISyncedInvoice[] | null): {
+    medianResolutionMinutes: number | null;
+    averageTouches: number | null;
+} {
+    const paidCash = new Set<string>();
+    if (invoices) {
+        for (const invoice of uniqueInvoices(invoices)) {
+            if (invoice.status === "paid" && invoice.amountPaidCents > 0) paidCash.add(invoice.id);
+        }
+    }
+
+    const groups = new Map<string, ICallTiming[]>();
+    for (const call of calls) {
+        if (!call.invoiceId) continue;
+        const group = groups.get(call.invoiceId);
+        if (group) group.push(call);
+        else groups.set(call.invoiceId, [call]);
+    }
+
+    const touches: number[] = [];
+    const minutes: number[] = [];
+    for (const [invoiceId, group] of groups) {
+        if (!group.some((call) => call.status === "paid") && !paidCash.has(invoiceId)) continue;
+        touches.push(group.length);
+
+        let start = Infinity;
+        let end = -Infinity;
+        for (const call of group) {
+            const began = timestamp(call.startedAt) ?? timestamp(call.createdAt);
+            if (began != null && began < start) start = began;
+            // ponytail: ends at the paid call. Use invoice paid_at if sync exposes it.
+            if (call.status !== "paid") continue;
+            const finished = timestamp(call.endedAt) ?? timestamp(call.startedAt);
+            if (finished != null && finished > end) end = finished;
+        }
+        if (start !== Infinity && end !== -Infinity && end >= start) {
+            minutes.push((end - start) / 60_000);
+        }
+    }
+
+    return {
+        medianResolutionMinutes: median(minutes),
+        averageTouches: touches.length === 0
+            ? null
+            : touches.reduce((sum, count) => sum + count, 0) / touches.length,
+    };
 }
 
 function uniqueInvoices(invoices: readonly ISyncedInvoice[]): ISyncedInvoice[] {
@@ -56,14 +123,15 @@ function uniqueInvoices(invoices: readonly ISyncedInvoice[]): ISyncedInvoice[] {
     return rows;
 }
 
-/** Dollars paid, still overdue, promised, and median call minutes. Null money means sync is missing. */
+/** Dollars paid, still overdue, promised, and collection effort. Null money means sync is missing. */
 export function homeMetrics(input: {
     invoices: readonly ISyncedInvoice[] | null;
     calls: readonly ICallTiming[];
     nowUnix: number;
 }): IHomeMetrics {
+    const pace = effort(input.calls, input.invoices);
     if (input.invoices == null || input.invoices.length === 0) {
-        return { recovered: null, stillOverdue: null, promised: null, medianMinutes: medianMinutes(input.calls) };
+        return { recovered: null, stillOverdue: null, promised: null, collectionRate: null, ...pace };
     }
 
     let paidCents = 0;
@@ -84,14 +152,17 @@ export function homeMetrics(input: {
         recovered: paidCents / 100,
         stillOverdue: overdueCents / 100,
         promised: promisedCents / 100,
-        medianMinutes: medianMinutes(input.calls),
+        collectionRate: collectionRate(input.invoices),
+        ...pace,
     };
 }
 
 interface ICallMoneyRow {
     stripe_invoice_id: string;
+    status?: string | null;
     started_at: string | null;
     ended_at: string | null;
+    created_at?: string | null;
 }
 
 interface IStripeInvoiceRow {
@@ -142,13 +213,26 @@ export async function loadHomeMetrics(supabase: SupabaseClient, now = new Date()
     const nowUnix = Math.floor(now.getTime() / 1000);
     const { data, error } = await supabase
         .from("calls")
-        .select("stripe_invoice_id, started_at, ended_at");
+        .select("stripe_invoice_id, status, started_at, ended_at, created_at");
     if (error || !data) {
-        return { recovered: null, stillOverdue: null, promised: null, medianMinutes: null };
+        return {
+            recovered: null,
+            stillOverdue: null,
+            promised: null,
+            collectionRate: null,
+            medianResolutionMinutes: null,
+            averageTouches: null,
+        };
     }
 
     const rows = data as ICallMoneyRow[];
-    const calls = rows.map((row) => ({ startedAt: row.started_at, endedAt: row.ended_at }));
+    const calls = rows.map((row) => ({
+        invoiceId: row.stripe_invoice_id,
+        status: row.status ?? null,
+        startedAt: row.started_at,
+        endedAt: row.ended_at,
+        createdAt: row.created_at ?? null,
+    }));
     const ids = [...new Set(rows.map((row) => row.stripe_invoice_id).filter(Boolean))];
     if (ids.length === 0) return homeMetrics({ invoices: [], calls, nowUnix });
 

@@ -6,15 +6,18 @@ vi.mock("@/lib/landlord-home/use-calls", () => ({
 }));
 vi.mock("@/lib/landlord-home/use-home-metrics", () => ({
     useHomeMetrics: () => ({
+        collectionRate: null,
+        medianResolutionMinutes: null,
+        averageTouches: null,
         recovered: null,
         stillOverdue: null,
         promised: null,
-        medianMinutes: null,
         loading: false,
     }),
 }));
 
 import { LandlordHome } from "@/components/landlord-home/LandlordHome";
+import { setDashboardPanel } from "@/lib/dashboard-panel";
 
 function mockDesktop(matches: boolean) {
     vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
@@ -32,10 +35,11 @@ function mockDesktop(matches: boolean) {
 describe("LandlordHome nav", () => {
     afterEach(() => {
         cleanup();
+        setDashboardPanel("home");
         vi.restoreAllMocks();
     });
 
-    it("portals Home, Live calls, Settings, and Billing into the toolbar on desktop", async () => {
+    it("portals Home and Live calls into the toolbar on desktop", async () => {
         mockDesktop(true);
         const slot = document.createElement("div");
         slot.id = "toolbar-nav-portal";
@@ -46,8 +50,26 @@ describe("LandlordHome nav", () => {
         await waitFor(() => {
             expect(slot.textContent).toContain("Home");
             expect(slot.textContent).toContain("Live calls");
-            expect(slot.textContent).toContain("Settings");
-            expect(slot.textContent).toContain("Billing");
+        });
+        expect(slot.textContent).not.toContain("Settings");
+        expect(slot.textContent).not.toContain("Billing");
+    });
+
+    it("opens Settings and Billing when the sidebar sets the panel", async () => {
+        mockDesktop(true);
+        const slot = document.createElement("div");
+        slot.id = "toolbar-nav-portal";
+        document.body.appendChild(slot);
+
+        const view = render(<LandlordHome />);
+        setDashboardPanel("settings");
+        await waitFor(() => {
+            expect(view.getByText("No settings yet.")).toBeTruthy();
+        });
+
+        setDashboardPanel("billing");
+        await waitFor(() => {
+            expect(view.getByText("No billing yet.")).toBeTruthy();
         });
     });
 });

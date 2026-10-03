@@ -3,12 +3,13 @@
 /**
  * @module LandlordHome
  * Right-panel tabs. Home and Live calls are outlets; Settings and Billing are empty.
- * On sm+, the tab buttons portal into #toolbar-nav-portal.
- * Depends on: tabs, AgentFloor, home panels.
+ * On sm+, Home and Live calls portal into #toolbar-nav-portal. Settings and Billing
+ * are opened from the sidebar.
+ * Depends on: tabs, AgentFloor, home panels, dashboard-panel.
  * Used by: ProgramGrid.
  */
 
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { AgentFloor } from "@/components/agent-floor/AgentFloor";
 import { ActivityFeed } from "@/components/landlord-home/ActivityFeed";
@@ -19,14 +20,13 @@ import { activity, funnel, needsYou } from "@/lib/landlord-home/home-derived";
 import { useCalls } from "@/lib/landlord-home/use-calls";
 import { useHomeMetrics } from "@/lib/landlord-home/use-home-metrics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getDashboardPanel, setDashboardPanel, subscribeDashboardPanel } from "@/lib/dashboard-panel";
 
 function HomeNav({ className }: { className?: string }) {
     return (
         <TabsList className={ className }>
             <TabsTrigger value="home">Home</TabsTrigger>
             <TabsTrigger value="live">Live calls</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
     );
 }
@@ -37,11 +37,11 @@ function EmptyTab({ children }: { children: string }) {
     );
 }
 
-/** Home | Live calls | Settings | Billing. Default tab is Home. Desktop: centered in the toolbar. */
+/** Home | Live calls in the toolbar. Settings and Billing from the sidebar. Default is Home. */
 export function LandlordHome() {
     const { agents, loading, error, flash } = useCalls();
     const metrics = useHomeMetrics();
-    const [tab, setTab] = useState("home");
+    const tab = useSyncExternalStore(subscribeDashboardPanel, getDashboardPanel, getDashboardPanel);
     const [openId, setOpenId] = useState<string | null>(null);
     const [navSlot, setNavSlot] = useState<HTMLElement | null>(null);
 
@@ -57,7 +57,7 @@ export function LandlordHome() {
     }, []);
 
     return (
-        <Tabs value={ tab } onValueChange={ setTab } className="flex h-full min-h-0 flex-col">
+        <Tabs value={ tab } onValueChange={ setDashboardPanel } className="flex h-full min-h-0 flex-col">
             { navSlot
                 ? createPortal(<HomeNav />, navSlot)
                 : <HomeNav className="mx-3 mt-3 w-fit shrink-0 sm:hidden" /> }
@@ -67,16 +67,18 @@ export function LandlordHome() {
                 ) : loading || metrics.loading ? null : (
                     <div className="flex min-w-0 flex-col gap-8 p-6">
                         <MetricsBand
+                            collectionRate={ metrics.collectionRate }
+                            medianResolutionMinutes={ metrics.medianResolutionMinutes }
+                            averageTouches={ metrics.averageTouches }
                             recovered={ metrics.recovered }
                             stillOverdue={ metrics.stillOverdue }
                             promised={ metrics.promised }
-                            medianMinutes={ metrics.medianMinutes }
                         />
                         <NeedsYou
                             items={ needsYou(agents) }
                             onOpenAgent={ (id) => {
                                 setOpenId(id);
-                                setTab("live");
+                                setDashboardPanel("live");
                             } }
                         />
                         <Funnel counts={ funnel(agents) } />

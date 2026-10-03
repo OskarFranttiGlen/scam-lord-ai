@@ -3,14 +3,13 @@
 /**
  * @module AppSidebar
  * Main app sidebar: collapsible icon/full layout on desktop, sheet on mobile.
- * Nav links, footer avatar (opens settings: theme, units, subscription,
- * delete account, log out), and test-user tier toggle.
+ * Nav links, footer user menu (settings, billing, theme, units, delete account,
+ * log out), and test-user tier toggle.
  * Depends on: UI Sidebar, UserContext, feature limits, authentication API, TestUserTierToggle.
  * Used by: app layout (sidebar slot).
  */
 import {
     LogOut,
-    Receipt,
     Trash2,
     Settings,
     Sun,
@@ -19,6 +18,7 @@ import {
     PanelLeft,
     LogIn,
     Plus,
+    Receipt,
 } from "lucide-react";
 import {
     Sidebar,
@@ -62,7 +62,8 @@ import { newPathLeaveGuard } from "@/hooks/create-leave-guard";
 import { BUILDER_DRAFT_KEY, clearBuilderDraft } from "@/lib/builder-draft";
 import { deleteChatHistory, setChatPinned, updateChatTitle } from "@/api/chat-history";
 import { buildAuthLoginHref } from "@/lib/sign-in-return";
-import { buildDashboardHref } from "@/lib/dashboard-url";
+import { buildDashboardHref, DASHBOARD_PATH } from "@/lib/dashboard-url";
+import { setDashboardPanel, type TDashboardPanel } from "@/lib/dashboard-panel";
 import { Logo } from "@/components/Logo";
 
 const CHAT_MESSAGES_KEY = "messages";
@@ -85,7 +86,6 @@ export function AppSidebar() {
     const { user, isLoading } = useUserContext();
     const { theme, setTheme } = useTheme();
     const { data: userFullName } = useUserFullName(user?.id ? user.id : undefined);
-    const stripePortalUrl = process.env.NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL?.trim() || "";
 
     const [openDeleteAccountDialog, setOpenDeleteAccountDialog] = useState(false);
     const [showNewChatConfirm, setShowNewChatConfirm] = useState(false);
@@ -166,6 +166,12 @@ export function AppSidebar() {
         prepareEmptyChat();
         router.push(href);
     }, [clearChat, closeMobileSidebar, router]);
+
+    const openPanel = (next: TDashboardPanel) => {
+        setDashboardPanel(next);
+        closeMobileSidebar();
+        if (pathname !== DASHBOARD_PATH) router.push(DASHBOARD_PATH);
+    };
 
     const handleNewChatClick = () => {
         if (user) {
@@ -473,31 +479,20 @@ export function AppSidebar() {
                                         <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
                                             Units
                                         </DropdownMenuLabel>
-                                       
-                                        {user && stripePortalUrl && (
-                                            <>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem asChild>
-                                                    <a
-                                                        href={stripePortalUrl}
-                                                        className="cursor-pointer flex items-center gap-2"
-                                                    >
-                                                        <Receipt className="h-4 w-4" />
-                                                        Manage billing
-                                                    </a>
-                                                </DropdownMenuItem>
-                                            </>
-                                        )}
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem asChild>
-                                            <Link
-                                                href="/account/privacy"
-                                                className="cursor-pointer flex items-center gap-2"
-                                                onClick={closeMobileSidebar}
-                                            >
-                                                <Settings className="h-4 w-4" />
-                                                Settings
-                                            </Link>
+                                        <DropdownMenuItem
+                                            onSelect={() => openPanel("settings")}
+                                            className="cursor-pointer flex items-center gap-2"
+                                        >
+                                            <Settings className="h-4 w-4" />
+                                            Settings
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={() => openPanel("billing")}
+                                            className="cursor-pointer flex items-center gap-2"
+                                        >
+                                            <Receipt className="h-4 w-4" />
+                                            Billing
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                             onSelect={(e) => {

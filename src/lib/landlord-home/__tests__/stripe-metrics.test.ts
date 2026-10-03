@@ -62,30 +62,83 @@ describe("homeMetrics", () => {
         }).promised).toBe(250);
     });
 
-    it("uses the median call length in minutes and skips calls missing a timestamp", () => {
+    it("divides rent collected by charges and ignores void, draft, and duplicate invoices", () => {
         expect(homeMetrics({
-            invoices: [invoice({ id: "in_paid", status: "paid", amountPaidCents: 100 })],
-            calls: [
-                { startedAt: "2026-10-03T10:00:00.000Z", endedAt: "2026-10-03T10:10:00.000Z" },
-                { startedAt: "2026-10-03T11:00:00.000Z", endedAt: null },
-                { startedAt: null, endedAt: "2026-10-03T12:00:00.000Z" },
-                { startedAt: "2026-10-03T12:00:00.000Z", endedAt: "2026-10-03T11:00:00.000Z" },
-                { startedAt: "2026-10-03T13:00:00.000Z", endedAt: "2026-10-03T13:20:00.000Z" },
+            invoices: [
+                invoice({ id: "in_paid", status: "paid", amountPaidCents: 184_000, amountRemainingCents: 0 }),
+                invoice({ id: "in_partial", amountPaidCents: 5_000, amountRemainingCents: 1_000 }),
+                invoice({ id: "in_paid", status: "paid", amountPaidCents: 184_000, amountRemainingCents: 0 }),
+                invoice({ id: "in_void", status: "void", amountPaidCents: 9_000, amountRemainingCents: 0 }),
+                invoice({ id: "in_draft", status: "draft", amountPaidCents: 4_000, amountRemainingCents: 0 }),
             ],
+            calls: [],
             nowUnix: NOW,
-        }).medianMinutes).toBe(15);
+        }).collectionRate).toBe(189_000 / 190_000);
     });
 
-    it("leaves money blank when sync is missing and still reports call length", () => {
+    it("reports 0% when charges are open and nothing has been paid", () => {
+        expect(homeMetrics({
+            invoices: [invoice({ id: "in_late", amountRemainingCents: 10_000 })],
+            calls: [],
+            nowUnix: NOW,
+        }).collectionRate).toBe(0);
+    });
+
+    it("uses the median time from the first touch to the paid call, and the mean touches on collected invoices", () => {
+        const metrics = homeMetrics({
+            invoices: [
+                invoice({ id: "in_fast", status: "paid", amountPaidCents: 100 }),
+                invoice({ id: "in_slow", status: "open", amountRemainingCents: 100 }),
+            ],
+            calls: [
+                {
+                    invoiceId: "in_fast",
+                    status: "in_progress",
+                    startedAt: "2026-10-03T10:00:00.000Z",
+                    endedAt: "2026-10-03T10:10:00.000Z",
+                },
+                {
+                    invoiceId: "in_fast",
+                    status: "paid",
+                    startedAt: "2026-10-03T11:00:00.000Z",
+                    endedAt: "2026-10-03T11:20:00.000Z",
+                },
+                {
+                    invoiceId: "in_slow",
+                    status: "paid",
+                    startedAt: "2026-10-03T12:00:00.000Z",
+                    endedAt: "2026-10-03T14:00:00.000Z",
+                },
+                {
+                    invoiceId: "in_open",
+                    status: "in_progress",
+                    startedAt: "2026-10-03T15:00:00.000Z",
+                    endedAt: "2026-10-03T15:05:00.000Z",
+                },
+            ],
+            nowUnix: NOW,
+        });
+        expect(metrics.medianResolutionMinutes).toBe(100);
+        expect(metrics.averageTouches).toBe(1.5);
+    });
+
+    it("leaves money blank when sync is missing and still scores calls already marked paid", () => {
         expect(homeMetrics({
             invoices: null,
-            calls: [{ startedAt: "2026-10-03T10:00:00.000Z", endedAt: "2026-10-03T10:10:00.000Z" }],
+            calls: [{
+                invoiceId: "in_1",
+                status: "paid",
+                startedAt: "2026-10-03T10:00:00.000Z",
+                endedAt: "2026-10-03T10:10:00.000Z",
+            }],
             nowUnix: NOW,
         })).toEqual({
             recovered: null,
             stillOverdue: null,
             promised: null,
-            medianMinutes: 10,
+            collectionRate: null,
+            medianResolutionMinutes: 10,
+            averageTouches: 1,
         });
     });
 });
@@ -126,7 +179,9 @@ describe("loadHomeMetrics", () => {
             recovered: null,
             stillOverdue: null,
             promised: null,
-            medianMinutes: 10,
+            collectionRate: null,
+            medianResolutionMinutes: null,
+            averageTouches: null,
         });
     });
 
@@ -136,6 +191,7 @@ describe("loadHomeMetrics", () => {
             calls: {
                 data: [{
                     stripe_invoice_id: "in_original",
+                    status: "in_progress",
                     started_at: "2026-10-03T10:00:00.000Z",
                     ended_at: "2026-10-03T10:08:00.000Z",
                 }],
@@ -181,7 +237,9 @@ describe("loadHomeMetrics", () => {
             recovered: 50,
             stillOverdue: 0,
             promised: 250,
-            medianMinutes: 8,
+            collectionRate: 5_000 / 30_000,
+            medianResolutionMinutes: null,
+            averageTouches: null,
         });
     });
 });

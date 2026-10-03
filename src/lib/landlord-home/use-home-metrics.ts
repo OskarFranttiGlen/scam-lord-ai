@@ -12,7 +12,7 @@ import { useUserContext } from "@/contexts/UserContext";
 import { createClient } from "@/utils/supabase/client";
 import { loadHomeMetrics } from "./stripe-metrics";
 
-/** Recovered, still overdue, promised, and median minutes. Blank until a read lands. */
+/** Collection pace and money tiles. Blank until a read lands. */
 export function useHomeMetrics() {
     const { user } = useUserContext();
     const query = useQuery({
@@ -23,10 +23,12 @@ export function useHomeMetrics() {
     const data = query.data;
 
     return {
+        collectionRate: data?.collectionRate ?? null,
+        medianResolutionMinutes: data?.medianResolutionMinutes ?? null,
+        averageTouches: data?.averageTouches ?? null,
         recovered: data?.recovered ?? null,
         stillOverdue: data?.stillOverdue ?? null,
         promised: data?.promised ?? null,
-        medianMinutes: data?.medianMinutes ?? null,
         loading: query.isLoading,
     };
 }
