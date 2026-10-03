@@ -424,6 +424,7 @@ function buildCallOpeningRules(ctx: CallContext): string {
         `- Your greeting asked whether this is ${firstName}. Say no amount or account detail until they confirm.`,
         `- When they confirm (for example "yes", "speaking", "that's me"), reply with exactly this, word for word, `
             + `with nothing before or after: "${buildRentOpening(ctx)}" Then stop and wait.`,
+        `- A bare "hi" or "hello" is not a confirmation: ask "Is this ${firstName}?" again.`,
         `- If it is not ${firstName}, say you will try them another time and share nothing about the account.`,
         `- If they ask why you are calling before confirming, say it is about their account and ask if this is ${firstName}.`,
         `- "Who is this?": "It's ${AGENT_NAME} from ${manager}. The main reason I'm calling is your rent." `
