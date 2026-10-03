@@ -128,6 +128,13 @@ describe("voice call instructions", () => {
         expect(prompt).toMatch(/Never mention eviction, credit reporting, or legal action/);
     });
 
+    it("keeps replies to a sentence or two under twenty words, with no filler", () => {
+        const prompt = buildNegotiationInstructions(getDemoCallContext(), true, "voice");
+
+        expect(prompt).toMatch(/under twenty words/);
+        expect(prompt).toMatch(/No filler/);
+    });
+
     it("never introduces itself as AI unprompted but never claims to be human", () => {
         const prompt = buildNegotiationInstructions(getDemoCallContext(), true, "voice");
 

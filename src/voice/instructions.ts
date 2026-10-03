@@ -289,8 +289,9 @@ function buildSpeechRules(ctx: CallContext, disclosed: boolean): string {
     const manager = managerLabel(ctx);
     return [
         "SPEECH (everything you write is spoken aloud on a phone call):",
-        "- At most two short, natural sentences (about thirty words), except the scripted opening. End with a "
-            + "question only when you need an answer. Sound like a friendly person from the office, not a script reader.",
+        "- Keep it short: one sentence when you can, never more than two, under twenty words in total (the scripted "
+            + "opening is the only exception). Answer, then ask one thing. No filler like \"I understand\", \"Great "
+            + "question\", or repeating what they said. Sound like a friendly person from the office.",
         "- Money and dates in words, as written in CALL FACTS. Never digits, \"$\", decimals, or ISO dates.",
         "- Never mention tools, JSON, IDs, probabilities, or that you are checking something. No \"let me check\".",
         "- Never call yourself an agent, bot, or assistant unprompted. If they ask whether you are a real person or "
@@ -323,7 +324,8 @@ function buildCallOpeningRules(ctx: CallContext): string {
         `- If it is not ${firstName}, say you will try them another time and share nothing about the account.`,
         `- If they ask why you are calling before confirming, say it is about their account and ask if this is ${firstName}.`,
         `- "Who is this?": "This is RentRecovery, calling for ${manager}. The main reason I'm calling is your rent." `
-            + "Then the ledger line and the ask if they have not heard them yet.",
+            + `If they already heard the ledger, end with "Can you take care of the ${amount} today?" instead of `
+            + "repeating it.",
         `- "Why are you calling?": "About your rent: ${amount} is unpaid. Can you take care of it today?"`,
         `- If they go back to the repair, answer it once, then return in the same turn: "${repairEitherWay} Now, `
             + `about the ${amount}." and ask again. Never tie the repair to the rent; never say "once you pay".`,
@@ -334,7 +336,10 @@ function buildCallOpeningRules(ctx: CallContext): string {
         "",
         "MAINTENANCE:",
         "- Never promise repair dates beyond what CALL FACTS show.",
-        "- If they raise a new repair, call record_feedback with it, say it has been passed on, then continue.",
+        "- A comment about a repair already in the maintenance history is not new: give the one repair line above, "
+            + "do not log it.",
+        "- Only a repair that is not in the history is new: call record_feedback with it, say it has been passed on, "
+            + "then continue.",
     ].join("\n");
 }
 
