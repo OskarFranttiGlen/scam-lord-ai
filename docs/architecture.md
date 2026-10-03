@@ -1,18 +1,20 @@
 # Architecture
 
-Claude is the negotiation brain. Jev, a System One model, is the low-latency decision model. It gives the agent better judgment from constraints we pre-define. Numeric landlord limits stay in plain code. Stripe collects the payment. Vercel hosts the dashboard.
+Supabase is the property system: tenancy, balance, policy, plan, payment, and call. The negotiation brain is a Vercel `ToolLoopAgent` with Claude as the model. Jev, a System One model, is the low-latency decision model. It gives the agent better judgment from constraints we pre-define. Numeric landlord limits stay in plain code. A Vercel `WorkflowAgent` finishes a Stripe payment or a human handoff when that waits past the spoken turn. Stripe collects the payment. Details are in [Property system](pms.md).
 
 ## Responsibilities
 
 | Piece | Role on the call |
 | --- | --- |
-| Claude | Talks with the tenant. Extracts dates, amounts, and reasons. Offers only plans the policy code allows. Phrases handoffs and payment confirmations for speech. |
+| Vercel `ToolLoopAgent` (Claude) | Talks with the tenant. Loads the tenancy from Supabase. Extracts dates, amounts, and reasons. Offers only plans the policy code allows. Phrases handoffs and payment confirmations for speech. |
 | Policy code | Enforces landlord limits: maximum installment splits, grace-period window, fee-waiver cap. Accepts or counters a proposal with no model in the loop. |
 | Jev (`typesafe-ai/jev`) | System One decision model. On each turn it judges the transcript against constraints we wrote in advance and returns a typed decision with a probability. Low latency, so it fits the voice loop. Code acts on the decision. |
 | Gemini | Reads a photo the tenant sends (hardship letter, repair issue) and writes a short description into call state. |
 | Stripe | Checkout link by SMS mid-call. Payment confirmation returns to the agent before the call ends. |
-| LiveKit | Audio in and out. Deepgram transcribes. ElevenLabs speaks. |
-| Vercel | Landlord dashboard and the AI Gateway path for Jev. |
+| LiveKit | Audio in and out. Deepgram transcribes. ElevenLabs speaks. Forwards each turn to the `ToolLoopAgent` and speaks the reply. |
+| Vercel `WorkflowAgent` | Durable wait for the Stripe webhook and for a person to take a handoff. |
+| Vercel | Dashboard, both agents, and the AI Gateway path for Claude, Jev, and Gemini. |
+| Supabase | The property records the agents read and write. |
 
 ## Call sequence
 
@@ -32,4 +34,4 @@ If wiring Jev through AI Gateway slips during the build, Claude answers the same
 
 ## Ledger
 
-The agent does not write the ledger in conversation. Policy code and the Stripe webhook are the only writers: a plan is stored when it passes policy, and a payment is stored when Stripe confirms it. The dashboard shows both.
+The agent does not write the ledger in conversation. Policy code inserts a `plans` row when the tenant accepts. The Stripe webhook, finished by the `WorkflowAgent`, marks `charges` paid and updates `payments`. The dashboard reads those Supabase rows.
