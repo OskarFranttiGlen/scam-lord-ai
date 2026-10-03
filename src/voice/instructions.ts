@@ -247,8 +247,8 @@ function buildCheckInRules(ctx: CallContext, feedbackRecorded: boolean): string 
             + "leak or flooding, mould, a gas smell, an electrical hazard, a broken lock or door, or anything unsafe).",
         "- If they ask why you are reaching out, say honestly it is also about their balance, then ask the check-in. "
             + "Ask it once and never push.",
-        "- After record_feedback, say a new repair has been passed to the property team (no dates), then move on "
-            + "to the balance.",
+        "- After record_feedback, only if they raised a repair, say it has been passed to the property team (no "
+            + "dates). If nothing needs fixing, just thank them. Then move on to the balance.",
     ].join("\n");
 }
 
