@@ -1,25 +1,37 @@
 # ScamLord
 
-The agent floor for ScamLord: where a person watches runs and asks the Agent manager what they are doing.
+The agent floor for ScamLord: where a person watches agents and asks the Agent manager what they are doing.
 
 ## Language
 
 **Agent floor**:
-The page where runs are watched. No landlord login.
-_Avoid_: Dashboard (that word is the landlord app), Shipworthy
+The page where agents are watched. The panel opposite the sidebar chat shows their graphs.
+_Avoid_: Dashboard (that word is the landlord app), Shipworthy, Chat artifact, grid
 
 **Agent manager**:
-The chat on the agent floor. It reads runs and answers in plain language. Phone agents are autonomous: it does not start them, stop them, or change a run already on a step.
-_Avoid_: Floor agent, Agent, ScamLord
+The sidebar chat opposite the graph. It reads agents and answers in plain language. The agents on the graph are autonomous: it does not start them, stop them, or change an agent already on a step.
+_Avoid_: Floor agent, ScamLord
 
-**Run**:
-One piece of agent work with a status: in progress, waiting on payment, or waiting on a person. It names a tenant, a property, and the step it is on.
-_Avoid_: Working agent, call (a call is what a run may be doing), agent
+**Agent**:
+One chain of linked steps. It has a status: in progress, waiting on payment, or waiting on a person. It names a tenant, a property, and the step it is on.
+_Avoid_: Run, call, working agent
+
+**Agent view**:
+The view opened from an agent. It shows that agent's chain, trace, invoice, schedule, outcome charges, and the policy and perks that bound it.
+_Avoid_: Settings screen, Calls screen, Billing screen
+
+**Policy**:
+The limits an agent may offer: maximum installments, grace window, and fee-waiver cap. One policy for the landlord, shared by that landlord's agents.
+_Avoid_: Settings, per-agent settings
+
+**Perk**:
+A landlord-written favor an agent may offer when its condition matches the plan.
+_Avoid_: Discount, waiver
 
 **Step**:
-One node on a run: Stripe invoice, workflow start, disclosure, Jev check, policy, Stripe plan, payment link, paid, or handoff.
+One node in an agent's chain: Stripe invoice, workflow start, disclosure, Jev check, policy, Stripe plan, payment link, paid, or handoff.
 _Avoid_: Status (status is in progress, waiting on payment, or waiting on a person), state
 
 **Trace**:
-What you see when you open a run: the transcript, the perk, the plan, and each Jev check.
+What you see when you open an agent: the transcript, the perk, the plan, and each Jev check.
 _Avoid_: Log

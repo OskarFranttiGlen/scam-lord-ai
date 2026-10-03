@@ -1,68 +1,62 @@
-# Shipworthy
+# ScamLord AI
 
-Hackathon template: hero chat dispatches into a builder with a chat panel and a structured **Chat artifact** (week/day grid for now). Brand and agent chrome are domain-neutral (**Shipworthy** / **Agent**).
+A rent collection agent that recovers more payments by making it easy for tenants to pay. It resolves late rent quickly and professionally with flexible plans, instant payment, and a respectful tone that keeps the tenant relationship strong.
 
-Gut of a former Proxima clone. History: [ADR 0033](docs/adr/complete/0033-shipworthy-hackathon-template/index.md). Shipped keep-set for this tree: [ADR 0034](docs/adr/complete/0034-fitness-strip-artifact-crud/index.md). Copy to `hackathon_template` when you want a clean remote.
+Built-in safeguards make it trustworthy: upfront AI disclosure, landlord-set policy limits, hardship detection with a human handoff, and dispute handling.
 
-## What you get
+## The problem
 
-- `/` hero Prompt only (no marketing below the fold)
-- `/dashboard` dual-pane: Agent chat + Chat artifact grid
-- Durable `artifacts` table (JSON document). Hollow or empty grid on New arrival until the Agent mutates via `readArtifact` / `mutateArtifact`
-- Skill sandbox tools (`loadSkill`, `readFile`, `bash`) plus optional `getMoreInfoQuestions`
-- Auth pages and Free metering
+A voice agent calling tenants about late rent is weaker than a person at reading emotions, negotiating with judgment, handling hardship and disputes, earning trust, and staying compliant. It is stronger at scale, consistency, 24/7 availability, languages, record-keeping, and instant payment links.
 
-Fitness builder residue, Soft-fail, Agentic memory, and Hevy export/sync chrome are out of the template happy path. Fitness and `hevy_*` tables are not in the repo migrations.
+The product leans on those strengths. It is built for a landlord or property manager with many properties: when any invoice goes overdue, the agent starts itself. Where a call needs judgment, Jev supplies it.
 
-Glossary: [`CONTEXT.md`](CONTEXT.md).
+## How a call works
 
-## Setup
+Stripe tells the agent who to call. An `invoice.payment_failed` event, or an invoice past due, starts a Vercel `WorkflowAgent`, which places the call with that invoice’s property and amount. A later failed installment starts another call with that context.
 
-Requires Node 20+, Docker Desktop (for local Supabase), and a shell that can run bash.
+Supabase stores the tenancy, the landlord’s limits, and the perks. In production the portfolio syncs from the property manager’s PMS. For the demo those rows are seeded in Supabase. Stripe holds the invoice, the installment schedule, and the payout. A Vercel `ToolLoopAgent` (Claude) negotiates on the call and writes the plan back into Stripe through the Agent Toolkit. Jev is the System One model: the low-latency decision layer that judges each turn against constraints we define ahead of time. A Jev flag blocks the next concession and hands the call to a person. When the tenant agrees, the agent sends one Stripe link by Twilio SMS and by Resend email, then confirms payment on the live call. A plan can include a perk the landlord already wrote, such as mowing the lawn if they pay.
 
-```bash
-cp .env.template .env.local
-# Fill Supabase + OPENAI_API_KEY at minimum (see below)
+```
+Stripe invoice overdue or payment_failed
+    │
+    ▼
+Vercel WorkflowAgent ── starts the call (any property in the portfolio)
+    │
+    ▼
+Supabase  tenancy, policy, perks, call
+    │
+    ▼
+Vercel ToolLoopAgent (Claude) ── tools: policy, Jev, Stripe Toolkit, Gemini
+    │
+    ▼
+[LiveKit audio] ──► [Deepgram STT] ──► agent ──► [ElevenLabs] ──► audio out
 
-./start-local-supabase.sh
-npm install
-npm run dev
+Agreed plan ──► Stripe Subscription Schedule + optional credit note
+Link ──► Twilio SMS + Resend email
+Jev flag ──► handoff
+Payout ──► landlord’s Stripe connected account
 ```
 
-`./start-local-supabase.sh` starts Docker Supabase, applies migrations, creates the test user, points `.env.local` at `http://127.0.0.1:54321`, and regenerates `src/hooks/supabase.ts`.
+## Hackathon categories
 
-Stop local Supabase with `npx supabase stop`. Status/keys: `npx supabase status`.
+| Bet | What judges should see |
+| --- | --- |
+| Stripe (deepest) | An overdue invoice starts the call on its own. The agent negotiates inside Stripe, sends the link by text and email, the judge pays, and the agent confirms it live. |
+| Claude | The negotiation brain, working inside policy guardrails. |
+| Gemini | Reads photos tenants send, such as a hardship letter or a repair issue. |
+| Vercel | Hosts the dashboard and runs the agents: `ToolLoopAgent` on the call, `WorkflowAgent` for payment and handoff. The agent floor shows live run status and a React Flow graph of the current step, with the Jev trace for each decision. Jev runs through AI Gateway. |
+| Codex | Used visibly during the build. |
+| UX | A landlord logs in and sees their portfolio and settings. |
+| Backup | A recorded demo if the live call fails. |
 
-### Test login
+## Specs
 
-After `./start-local-supabase.sh`:
+The locked spec is [docs/SPEC.md](docs/SPEC.md). The notes below are how we got there. If they disagree with the locked spec, the locked spec wins.
 
-- Email: `test@localhost.dev`
-- Password: `Password123!`
-
-### Env vars
-
-See [`.env.template`](.env.template).
-
-| Area | Required? | Notes |
-|------|-----------|--------|
-| Supabase anon URL/key | Yes for app data | `NEXT_PUBLIC_REACT_APP_SUPABASE_*` |
-| `OPENAI_API_KEY` | Yes for `/api/chat` | Anon + authenticated chat |
-| `SUPABASE_SECRET_KEY` | Server paths | Service role; never expose to the client |
-| Stripe Sync Engine | Bring your own project | Set `NEXT_PUBLIC_REACT_APP_SUPABASE_*` to a Supabase project that already has Stripe Sync Engine. The hosted demo does not accept a Stripe secret. |
-| Payload / blog Supabase | Unused | Blog/admin routes stripped |
-| Hevy share keys | Unused | Export/sync chrome stripped |
-| PostHog | Optional | Analytics |
-
-## Scripts
-
-```bash
-npm run dev          # Next.js
-npm run lint
-npm run test:ci      # vitest run
-npm run build
-```
-
-## Contracts
-
-ADR 0034 contracts C1–C16 are the acceptance bar (includes residual 0033 checks). Sub-plan [08](docs/adr/complete/0034-fitness-strip-artifact-crud/08-verify.md) lists the verify greps.
+- [Stripe](docs/stripe.md) — events start the call, the agent writes the plan in Stripe, each landlord is billed for collection outcomes
+- [Property system](docs/pms.md) — Supabase records and the Vercel agents
+- [Architecture](docs/architecture.md) — who decides what on a call
+- [Safeguards](docs/safeguards.md) — code policy, Jev decisions, human handoff, Gemini
+- [Voice agent](docs/voice-agent.md) — disclosure, prompt, tools, Stripe on the call
+- [Dashboard](docs/dashboard.md) — landlord login, AppFolio connection, portfolio, settings, calls, billing, and the agent floor
+- [Demo](docs/demo.md) — live Stripe path and the recorded backup
