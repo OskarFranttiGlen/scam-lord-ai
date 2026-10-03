@@ -2,7 +2,7 @@
 
 A landlord logs in and sees their own portfolio. The app is a small Vercel site. Supabase Auth is the login. Row level security limits every query to that landlord.
 
-The demo account is seeded. Production uses the same login after the PMS sync has created the landlord row.
+The demo account is seeded. The AppFolio connection on screen is display only: it shows the details of a connected account and does not call AppFolio. Production uses the same login after a real PMS sync has created the landlord row.
 
 ## Login
 
@@ -10,9 +10,11 @@ Email and password. The session is the Supabase user on `landlords.auth user`. A
 
 ## After login
 
-Four screens. That is the whole app.
+Five screens. That is the whole app.
 
-**Portfolio.** Properties, units, and tenancies synced from their PMS (seeded for the demo). Each tenancy shows the open Stripe invoice: amount, due date, and status. This is the screen that proves the agent watches more than one property.
+**Connection.** AppFolio, shown as connected. The screen lists the account name, the connected status, when it last synced, and the counts it brought in: properties, units, and tenancies. A button reads “Sync now” and does not hit AppFolio. The rows under it are the seeded Supabase records, labeled as imported from AppFolio.
+
+**Portfolio.** Those same properties, units, and tenancies. Each tenancy shows the open Stripe invoice: amount, due date, and status. This is the screen that proves the agent watches more than one property.
 
 **Calls.** Calls for those tenancies. Status is one of in progress, waiting on a person, or paid. Opening a call shows the transcript, any perk offered, and the plan. A handoff sits here until someone takes it.
 

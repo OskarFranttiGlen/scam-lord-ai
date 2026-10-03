@@ -6,7 +6,7 @@ Stripe is the deepest category bet. Everything else on stage supports that one l
 
 The judge plays the tenant. A second screen shows the Vercel dashboard.
 
-1. A landlord logs in. The portfolio shows more than one property, and settings are already filled: a small installment cap, a short grace window, and a fee-waiver cap. This is the UX beat.
+1. A landlord logs in. The AppFolio connection is already shown as connected, with the imported properties underneath. Settings are filled: a small installment cap, a short grace window, and a fee-waiver cap. This is the UX beat. The connection does not call AppFolio.
 2. An invoice is marked failed or overdue. The agent calls on its own, names the property, discloses that it is an AI, and states that invoice’s balance.
 3. The judge asks for something outside policy (more installments, a waived fee, or a far-off date).
 4. The agent comes back with the plan the code allows, in a short respectful turn, and may add a perk the landlord wrote (“pay today and we’ll mow the lawn”). That is the Claude beat, inside guardrails.

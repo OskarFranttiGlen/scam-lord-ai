@@ -1,6 +1,6 @@
 # Property system
 
-ScamLord AI is the collection layer on top of a property manager’s existing system. It keeps the slice of that portfolio the agent needs: landlords, properties, units, and tenancies. In production those rows sync from their PMS. For the demo they are seeded in Supabase, with no live connector. Stripe holds the money: invoices, installment schedules, credit notes, and payouts. See [Stripe](stripe.md).
+ScamLord AI is the collection layer on top of a property manager’s existing system. It keeps the slice of that portfolio the agent needs: landlords, properties, units, and tenancies. In production those rows sync from their PMS. For the demo the dashboard shows an AppFolio connection with account name, status, last sync, and the imported counts. The data under it is seeded in Supabase. Nothing calls AppFolio. Stripe holds the money: invoices, installment schedules, credit notes, and payouts. See [Stripe](stripe.md).
 
 Policy limits and perks are ours. They are set on the dashboard, not copied from the PMS.
 

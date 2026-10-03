@@ -56,5 +56,5 @@ Payout ──► landlord’s Stripe connected account
 - [Architecture](docs/architecture.md) — who decides what on a call
 - [Safeguards](docs/safeguards.md) — code policy, Jev decisions, human handoff, Gemini
 - [Voice agent](docs/voice-agent.md) — disclosure, prompt, tools, Stripe on the call
-- [Dashboard](docs/dashboard.md) — landlord login, portfolio, settings, calls, billing
+- [Dashboard](docs/dashboard.md) — landlord login, AppFolio connection, portfolio, settings, calls, billing
 - [Demo](docs/demo.md) — live Stripe path and the recorded backup
