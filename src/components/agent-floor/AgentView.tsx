@@ -25,6 +25,7 @@ import {
     FLOOR_MIN_ZOOM,
     FLOOR_NODE_TYPES,
     chainStartViewport,
+    markFlash,
 } from "./StepNode";
 
 const STATUS_TO_BADGE: Record<TAgentStatus, TStatus> = {
@@ -49,6 +50,7 @@ const STEP_LABEL: Record<TAgentStep, string> = {
 interface IProps {
     agent: IAgent;
     onBack: () => void;
+    flash?: { id: string; step: string } | null;
 }
 
 function Section({
@@ -102,8 +104,10 @@ function OutcomeRow({ label, done }: { label: string; done: boolean }) {
  * @param props.agent - The agent opened from the floor.
  * @param props.onBack - Returns to the floor.
  */
-export function AgentView({ agent, onBack }: IProps) {
-    const { nodes, edges } = buildFloorGraph([agent]);
+export function AgentView({ agent, onBack, flash = null }: IProps) {
+    const built = buildFloorGraph([agent]);
+    const nodes = markFlash(built.nodes, flash);
+    const edges = built.edges;
     const latestJev = agent.trace.jev[agent.trace.jev.length - 1];
 
     return (

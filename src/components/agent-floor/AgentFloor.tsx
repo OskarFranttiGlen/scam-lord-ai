@@ -7,7 +7,6 @@
  * Used by: LandlordHome.
  */
 
-import { useState } from "react";
 import { Background, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { IAgent } from "@/lib/agent-floor/agents";
@@ -19,12 +18,22 @@ import {
     FLOOR_MIN_ZOOM,
     FLOOR_NODE_TYPES,
     chainStartViewport,
+    markFlash,
 } from "./StepNode";
 
 /** Floor of every working agent, or the agent view when one chain is open. */
-export function AgentFloor({ agents }: { agents: readonly IAgent[] }) {
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const selected = agents.find((agent) => agent.id === selectedId);
+export function AgentFloor({
+    agents,
+    openId,
+    onOpenChange,
+    flash,
+}: {
+    agents: readonly IAgent[];
+    openId: string | null;
+    onOpenChange: (id: string | null) => void;
+    flash: { id: string; step: string } | null;
+}) {
+    const selected = openId ? agents.find((agent) => agent.id === openId) : undefined;
 
     if (agents.length === 0) {
         return <p className="p-6 text-sm text-muted-foreground">No live calls.</p>;
@@ -34,23 +43,24 @@ export function AgentFloor({ agents }: { agents: readonly IAgent[] }) {
         return (
             <AgentView
                 agent={ selected }
-                onBack={ () => setSelectedId(null) }
+                flash={ flash }
+                onBack={ () => onOpenChange(null) }
             />
         );
     }
 
     const { nodes, edges } = buildFloorGraph(agents);
+    const shown = markFlash(nodes, flash);
 
     return (
         <div className="h-full w-full">
             <ReactFlow
-                nodes={ nodes }
+                nodes={ shown }
                 edges={ edges }
                 nodeTypes={ FLOOR_NODE_TYPES }
                 onNodeClick={ (event, node) => {
                     void event;
-                    const agentId = node.id.split(":")[0];
-                    setSelectedId(agentId ?? null);
+                    onOpenChange(node.id.split(":")[0] ?? null);
                 } }
                 defaultViewport={ nodes[0] ? chainStartViewport(nodes[0]) : undefined }
                 minZoom={ FLOOR_MIN_ZOOM }
