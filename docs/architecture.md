@@ -24,7 +24,7 @@ Stripe is the money system. An overdue or failed invoice starts the call, across
 4. On each tenant turn, code sends the transcript window and the pre-defined constraints to Jev. Jev returns a decision for hardship, dispute, and distress.
 5. If a decision flags, Claude stops negotiating, tells the tenant a person will follow up, and the call is marked for human handoff.
 6. If the tenant accepts a plan inside policy, Claude sends the Stripe link by Twilio SMS and Resend email.
-7. When Stripe reports the payment, Claude confirms the amount. The invoice is paid in Stripe, and Connect routes the funds to that landlord.
+7. When Stripe reports the payment, Claude confirms the amount. The destination charge is paid, and Connect transfers the rent to that landlord.
 8. A photo, if one arrives, is read by Gemini and attached to the call. A hardship letter or a repair dispute feeds the same handoff path.
 
 ## What stays out of the model

@@ -50,7 +50,7 @@ Two different Stripe flows.
 
 An agent action is a tool or inference on their behalf: starting the call, a Jev check, a Stripe write, sending the link. The call row records which landlord the meter event belongs to.
 
-**The tenant’s rent still goes to the landlord.** Each landlord is also a connected account (Accounts v2). Recovered rent settles there. Our usage charge is separate from that payout. We do not take the rent.
+**We collect the rent on the landlord’s behalf.** Each landlord is a connected account (Accounts v2). The tenant pays through our checkout. That payment is a destination charge: we are the merchant of record, and Stripe transfers the rent to that landlord’s connected account when it succeeds. We do not keep a cut of the rent. The usage charge above is a separate bill to the landlord.
 
 Build Connect in the hackathon if the closed loop and the in-call Stripe tools are already solid. The usage meter should be live for the demo call, so a judge can see the landlord get charged for the agent run.
 
