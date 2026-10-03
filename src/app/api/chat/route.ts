@@ -80,7 +80,7 @@ async function handleChatPost(req: Request) {
                 const sanitizedMessages = sanitizeMessagesWithUnresolvedToolCalls(messages);
 
                 const systemPrompt = instructions();
-                const tools = getTools();
+                const tools = getTools(supabase);
 
                 const sandbox = createSandbox({ workingDirectory: process.cwd() });
                 const skills = await discoverSkills(sandbox, ['.agents/skills']);

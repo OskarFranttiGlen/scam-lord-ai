@@ -3,8 +3,8 @@
  */
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { findAgent } from "@/lib/agent-floor/agents";
 import { AgentView } from "../AgentView";
+import type { IAgent } from "@/lib/agent-floor/agents";
 
 vi.mock("@xyflow/react", () => ({
     ReactFlow: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -31,10 +31,29 @@ describe("AgentView", () => {
     });
 
     it("renders the handoff agent with no text field", () => {
-        const agent = findAgent("agent-handoff");
-        if (!agent) {
-            throw new Error("handoff agent missing");
-        }
+        const agent: IAgent = {
+            id: "agent-handoff",
+            tenant: "Casey Diaz",
+            property: "9 Alder",
+            status: "waiting_on_person",
+            currentStep: "handoff",
+            invoice: {
+                amount: 960,
+                status: "open",
+                dueDate: "2026-08-28",
+                hostedUrl: "https://pay.stripe.test/handoff",
+            },
+            schedule: { installments: 0, dates: [], amounts: [] },
+            outcomes: { callPlaced: true, planAccepted: false, paymentCleared: false },
+            policy: { maxInstallments: 2, graceDays: 14, feeWaiverCap: 0 },
+            perks: [],
+            trace: {
+                transcript: ["Casey: I lost my job. I can't pay this."],
+                perkId: null,
+                plan: "",
+                jev: [{ hardship: 0.82, dispute: 0.1, distressed: 0.4, outcome: "handoff" }],
+            },
+        };
 
         render(
             <AgentView agent={agent} onBack={() => undefined} />,

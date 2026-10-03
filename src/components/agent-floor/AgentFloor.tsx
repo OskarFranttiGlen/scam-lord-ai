@@ -10,7 +10,7 @@
 import { useState } from "react";
 import { Background, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { DEFAULT_AGENTS, type IAgent } from "@/lib/agent-floor/agents";
+import type { IAgent } from "@/lib/agent-floor/agents";
 import { buildFloorGraph } from "./build-floor-graph";
 import { AgentView } from "./AgentView";
 import { FloorNav } from "./FloorNav";
@@ -22,13 +22,13 @@ import {
 } from "./StepNode";
 
 /** Floor of every working agent, or the agent view when one chain is open. */
-export function AgentFloor({
-    agents = DEFAULT_AGENTS,
-}: {
-    agents?: readonly IAgent[];
-}) {
+export function AgentFloor({ agents }: { agents: readonly IAgent[] }) {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const selected = agents.find((agent) => agent.id === selectedId);
+
+    if (agents.length === 0) {
+        return <p className="p-6 text-sm text-muted-foreground">No live calls.</p>;
+    }
 
     if (selected) {
         return (

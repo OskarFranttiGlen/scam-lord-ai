@@ -31,6 +31,7 @@ const STATUS_TO_BADGE: Record<TAgentStatus, TStatus> = {
     in_progress: "in-progress",
     waiting_on_payment: "waiting-on-payment",
     waiting_on_person: "waiting-on-person",
+    paid: "paid",
 };
 
 const STEP_LABEL: Record<TAgentStep, string> = {
