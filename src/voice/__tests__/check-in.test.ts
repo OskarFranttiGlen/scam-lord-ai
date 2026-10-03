@@ -142,20 +142,17 @@ describe("check-in during a handoff", () => {
 });
 
 describe("check-in greetings", () => {
-    it("asks how the unit is going before any amount on an outbound call", () => {
+    it("ends the outbound greeting at the disclosure and a good-time question, with no amount", () => {
         const greeting = buildOpeningGreeting(context());
 
-        expect(greeting).toMatch(/AI assistant calling for Maple Court/);
-        expect(greeting).toMatch(/good time/i);
-        expect(greeting).toMatch(/how's everything going with the unit/i);
-        expect(greeting).not.toMatch(/dollar|balance|rent/i);
+        expect(greeting).toBe("Hi, is this Jordan? This is an AI assistant calling for Maple Court. Is now a good time?");
     });
 
-    it("follows up on an open repair in the greeting", () => {
+    it("leaves an open repair for the next turn so a bare yes cannot be read as the repair answer", () => {
         const greeting = buildOpeningGreeting(context({ maintenanceRequests: [OPEN_TAP] }));
 
-        expect(greeting).toMatch(/kitchen tap dripping/i);
-        expect(greeting).not.toMatch(/dollar|balance/i);
+        expect(greeting).not.toMatch(/tap|repair|fix/i);
+        expect(greeting.trim().endsWith("Is now a good time?")).toBe(true);
     });
 
     it("does not lead with the balance when a known tenant calls back", () => {
@@ -169,6 +166,13 @@ describe("check-in instructions", () => {
 
         expect(prompt).toMatch(/CHECK-IN FIRST/);
         expect(prompt).toMatch(/record_feedback/);
+    });
+
+    it("only tells the agent to say a repair was passed on when the tenant raised one", () => {
+        const prompt = buildNegotiationInstructions(context(), true, "voice", { feedbackRecorded: false });
+
+        expect(prompt).not.toMatch(/After record_feedback, say a new repair has been passed/);
+        expect(prompt).toMatch(/only if they raised a repair/);
     });
 
     it("drops the check-in rule once feedback is recorded", () => {

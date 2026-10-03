@@ -1,13 +1,21 @@
 /**
  * @vitest-environment node
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { decideSignals, SIGNAL_FLAG_LINE } from "@/collection/signals";
 
 const CALM = { hardship: 0.05, dispute: 0.05, distressed: 0.05 };
 
 describe("decideSignals", () => {
+    beforeEach(() => {
+        vi.stubEnv("SCAMLORD_PLAYBOOK_MODE", "");
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
     it("continues with no reasons when every probability is below the flag line", () => {
         expect(decideSignals(CALM)).toEqual({ decision: "continue", reasons: [] });
     });

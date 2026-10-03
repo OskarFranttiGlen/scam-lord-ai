@@ -135,20 +135,7 @@ export function dollarsToWords(amount: number): string {
  */
 export function buildOpeningGreeting(context: CallContext): string {
     const firstName = context.tenantName.trim().split(/\s+/)[0] || context.tenantName;
-    const opening = `Hi, is this ${firstName}? This is an AI assistant calling for ${context.propertyName}. Is now a good time?`;
-    const scheduled = context.maintenanceRequests?.find(
-        (request) => request.status === "scheduled" && request.appointmentLabel,
-    );
-    if (scheduled?.appointmentLabel) {
-        return `${opening} Your ${scheduled.description.toLowerCase()} is booked for ${scheduled.appointmentLabel}. `
-            + "Does that still work?";
-    }
-    const openRepair = context.maintenanceRequests?.find((request) => request.status !== "resolved");
-    const checkIn = openRepair
-        ? `Before anything else, you mentioned ${openRepair.description.toLowerCase()} a little while ago. `
-            + "Has that been sorted, and is everything else okay with the unit?"
-        : "Before anything else, how's everything going with the unit? Anything that needs fixing?";
-    return `${opening} ${checkIn}`;
+    return `Hi, is this ${firstName}? This is an AI assistant calling for ${context.propertyName}. Is now a good time?`;
 }
 
 /**

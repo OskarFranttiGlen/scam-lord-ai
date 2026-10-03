@@ -223,7 +223,8 @@ function createVoiceSession(ctx: JobContext): voice.AgentSession {
         turnHandling: {
             turnDetection: useVadTurns ? "vad" : new inference.TurnDetector(),
             endpointing: useVadTurns ? { minDelay: 450, maxDelay: 2000 } : { minDelay: 300, maxDelay: 2000 },
-            interruption: { enabled: true },
+            // Phone backchannels ("okay", "yeah") and line noise otherwise cut the agent off mid-sentence.
+            interruption: { enabled: true, minWords: 2 },
             // Preemptive generation would call llmNode before end of turn and run the brain twice.
             preemptiveGeneration: { enabled: false },
         },
