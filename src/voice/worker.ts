@@ -60,15 +60,15 @@ import { loadCallSetup, loadCallbackSetup } from "./load-call-context";
 import { loadCheckInContext } from "./maintenance";
 import { TENANT_SIP_PARTICIPANT_IDENTITY } from "./outbound-call";
 import { persistCall } from "./persist-call";
+import { replaySkippedSpeech } from "./replay-skipped-speech";
 import { getVoiceSupabaseClient } from "./supabase-client";
 import { waitForFulfilment } from "./tools";
 import { UNKNOWN_CALLER_GREETING, UnknownCallerAgent } from "./unknown-caller";
 
 const LIVEKIT_ENV_KEYS = ["LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"] as const;
 
-/** Premade "Will"; ElevenLabs free tier returns 402 for library voices. */
-/** "Mark - Natural Conversations" (ElevenLabs shared library; must be added to the account's voices). */
-const DEFAULT_ELEVEN_VOICE_ID = "UgBBYS2sOqTuMpoF3BR0";
+/** "Mia - Warm, approachable & natural" (ElevenLabs shared library; must be added to the account's voices). */
+const DEFAULT_ELEVEN_VOICE_ID = "cr0sIcub5EqRc36Kj15s";
 
 /** Pause after an unknown caller's closing line before the room (and phone call) is ended. */
 const UNKNOWN_CALLER_HANGUP_DELAY_MS = 800;
@@ -268,9 +268,8 @@ function createVoiceSession(ctx: JobContext): voice.AgentSession {
         turnHandling: {
             turnDetection: useVadTurns ? "vad" : new inference.TurnDetector(),
             endpointing: useVadTurns ? { minDelay: 450, maxDelay: 2000 } : { minDelay: 300, maxDelay: 2000 },
-            // Phone backchannels ("okay", "yeah") and line noise otherwise cut the agent off mid-sentence.
             // Phone line noise and backchannels kept cutting the agent off, so it always finishes its
-            // (two-sentence) reply. Tenant audio is kept, not discarded, and becomes the next turn.
+            // reply. LiveKit drops turns that end mid-reply; replaySkippedSpeech answers them after.
             interruption: { enabled: false, discardAudioIfUninterruptible: false },
             // Preemptive generation would call llmNode before end of turn and run the brain twice.
             preemptiveGeneration: { enabled: false },
@@ -282,6 +281,7 @@ function createVoiceSession(ctx: JobContext): voice.AgentSession {
         }
         log().error({ error: ev.error }, "[voice/worker] unrecoverable session error");
     });
+    replaySkippedSpeech(session);
     return session;
 }
 

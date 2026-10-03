@@ -9,7 +9,7 @@
  * Used by: @/voice/agent.ts, @/voice/tools.ts, @/voice/run-turn.ts, @/text/handle-inbound-text.ts
  */
 
-import { buildLedgerLine, buildRentOpening, managerLabel } from "./call-opening";
+import { AGENT_NAME, buildLedgerLine, buildRentOpening, managerLabel } from "./call-opening";
 import { MISSED_PROMISES_THRESHOLD } from "./call-notes";
 import type { CallContext } from "./context";
 
@@ -295,11 +295,11 @@ function buildSpeechRules(ctx: CallContext, disclosed: boolean): string {
         "- Money and dates in words, as written in CALL FACTS. Never digits, \"$\", decimals, or ISO dates.",
         "- Never mention tools, JSON, IDs, probabilities, or that you are checking something. No \"let me check\".",
         "- Never call yourself an agent, bot, or assistant unprompted. If they ask whether you are a real person or "
-            + `a robot, say honestly you are an AI assistant for ${manager}; never claim to be a person.`,
+            + `a robot, say honestly you are ${AGENT_NAME}, an AI assistant for ${manager}; never claim to be a person.`,
         disclosed
-            ? `- You already said this is RentRecovery calling for ${manager}. Do not reintroduce yourself unless asked.`
-            : `- This is your first line on the call: "Hi, is this ${ctx.tenantName.split(/\s+/)[0]}? This is `
-                + `RentRecovery, calling for ${manager}."`,
+            ? `- You already said you are ${AGENT_NAME} from ${manager}. Do not reintroduce yourself unless asked.`
+            : `- This is your first line on the call: "Hi, is this ${ctx.tenantName.split(/\s+/)[0]}? It's `
+                + `${AGENT_NAME} from ${manager}."`,
     ].join("\n");
 }
 
@@ -323,7 +323,7 @@ function buildCallOpeningRules(ctx: CallContext): string {
             + `with nothing before or after: "${buildRentOpening(ctx)}" Then stop and wait.`,
         `- If it is not ${firstName}, say you will try them another time and share nothing about the account.`,
         `- If they ask why you are calling before confirming, say it is about their account and ask if this is ${firstName}.`,
-        `- "Who is this?": "This is RentRecovery, calling for ${manager}. The main reason I'm calling is your rent." `
+        `- "Who is this?": "It's ${AGENT_NAME} from ${manager}. The main reason I'm calling is your rent." `
             + `If they already heard the ledger, end with "Can you take care of the ${amount} today?" instead of `
             + "repeating it.",
         `- "Why are you calling?": "About your rent: ${amount} is unpaid. Can you take care of it today?"`,
@@ -438,7 +438,7 @@ export function buildNegotiationInstructions(
         : "It saves the plan, emails the secure payment link, and replies to the tenant with the link for you.";
     return [
         channel === "voice"
-            ? `You are RentRecovery, phoning a tenant for ${managerLabel(ctx)} about an overdue balance. Calm, warm, and brief.`
+            ? `You are ${AGENT_NAME}, phoning a tenant for ${managerLabel(ctx)} about an overdue balance. Calm, warm, and brief.`
             : "You are ScamLord AI, a calm, warm AI assistant texting with a tenant for their property manager about an overdue balance.",
         "",
         buildChannelRules(ctx, disclosed, channel),
@@ -493,7 +493,7 @@ export function buildHandoffInstructions(
 ): string {
     return [
         channel === "voice"
-            ? `You are RentRecovery, phoning a tenant for ${managerLabel(ctx)}. Calm and warm.`
+            ? `You are ${AGENT_NAME}, phoning a tenant for ${managerLabel(ctx)}. Calm and warm.`
             : "You are ScamLord AI, a calm, warm AI assistant texting with a tenant for their property manager.",
         `This ${channel === "voice" ? "call" : "conversation"} has been handed to a person at ${ctx.propertyName}`
             + `${reasons.length ? ` (flagged: ${reasons.join(", ")})` : ""}.`,
@@ -564,7 +564,7 @@ export function buildPlaybookInstructions(
     const balance = format.dollars(ctx.openBalance);
     const common = [
         channel === "voice"
-            ? `You are RentRecovery, phoning a tenant for ${managerLabel(ctx)} about an overdue balance. Calm and warm.`
+            ? `You are ${AGENT_NAME}, phoning a tenant for ${managerLabel(ctx)} about an overdue balance. Calm and warm.`
             : "You are RentRecovery, a calm AI assistant texting about an overdue balance.",
         `Playbook: ${playbook}. The balance of ${balance} is still owed; stay friendly but firm.`,
         "End each turn with one specific ask (an amount, a date, or permission to text details).",

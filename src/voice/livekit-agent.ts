@@ -16,7 +16,7 @@ import type { ModelMessage } from "ai";
 import { ReadableStream } from "node:stream/web";
 
 import type { TCollectionVoiceAgent } from "./agent";
-import { managerLabel } from "./call-opening";
+import { AGENT_NAME, managerLabel } from "./call-opening";
 import type { CallContext, CallState } from "./context";
 import { streamVoiceTurn, type TStreamVoiceTurn } from "./run-turn";
 
@@ -136,7 +136,7 @@ export function dollarsToWords(amount: number): string {
  */
 export function buildOpeningGreeting(context: CallContext): string {
     const firstName = context.tenantName.trim().split(/\s+/)[0] || context.tenantName;
-    return `Hi, is this ${firstName}? This is RentRecovery, calling for ${managerLabel(context)}.`;
+    return `Hi, is this ${firstName}? It's ${AGENT_NAME} from ${managerLabel(context)}.`;
 }
 
 /**
@@ -148,7 +148,7 @@ export function buildOpeningGreeting(context: CallContext): string {
  */
 export function buildCallbackGreeting(context: CallContext, { handoffActive }: { handoffActive: boolean }): string {
     const firstName = context.tenantName.trim().split(/\s+/)[0] || context.tenantName;
-    const opening = `Hi ${firstName}, thanks for calling ${managerLabel(context)}. This is RentRecovery.`;
+    const opening = `Hi ${firstName}, it's ${AGENT_NAME} from ${managerLabel(context)}.`;
     return handoffActive
         ? `${opening} Someone from the property will follow up with you personally. Can I take a message for them?`
         : `${opening} How can I help today?`;

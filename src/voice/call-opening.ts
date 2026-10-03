@@ -26,6 +26,9 @@ function monthName(isoMonth: string): string {
     return MONTHS[Number(isoMonth.slice(5, 7)) - 1] ?? isoMonth;
 }
 
+/** The name the agent goes by on calls; matches the ElevenLabs voice. */
+export const AGENT_NAME = "Mia";
+
 /** Who the call is for, as spoken. */
 export function managerLabel(ctx: CallContext): string {
     return ctx.managerName?.trim() || ctx.propertyName;

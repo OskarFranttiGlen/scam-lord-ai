@@ -19,15 +19,15 @@ function context(overrides: Partial<CallContext> = {}): CallContext {
 const month = (m: string, status: TLedgerMonth["status"], amount = 1840): TLedgerMonth => ({ month: m, amount, status });
 
 describe("buildOpeningGreeting", () => {
-    it("asks for the tenant by first name and names RentRecovery and the manager, with no amount", () => {
+    it("asks for the tenant by first name and introduces itself as Mia from the manager, with no amount", () => {
         const greeting = buildOpeningGreeting(context());
 
-        expect(greeting).toBe("Hi, is this Jordan? This is RentRecovery, calling for Maple Court Property Management.");
+        expect(greeting).toBe("Hi, is this Jordan? It's Mia from Maple Court Property Management.");
         expect(greeting).not.toMatch(/dollar|\d/i);
     });
 
     it("falls back to the property name when no manager name is known", () => {
-        expect(buildOpeningGreeting(context({ managerName: undefined }))).toContain("calling for Maple Court.");
+        expect(buildOpeningGreeting(context({ managerName: undefined }))).toContain("Mia from Maple Court.");
     });
 });
 
@@ -121,7 +121,7 @@ describe("voice call instructions", () => {
     it("covers the test lines: who is this, why are you calling, back to the repair, pay when fixed", () => {
         const prompt = buildNegotiationInstructions(getDemoCallContext(), true, "voice");
 
-        expect(prompt).toContain("This is RentRecovery, calling for Maple Court Property Management. The main reason I'm calling is your rent.");
+        expect(prompt).toContain("It's Mia from Maple Court Property Management. The main reason I'm calling is your rent.");
         expect(prompt).toContain("About your rent: eighteen hundred forty dollars is unpaid. Can you take care of it today?");
         expect(prompt).toContain("That's booked either way. Now, about the eighteen hundred forty dollars.");
         expect(prompt).toMatch(/pay once a repair is fixed[^\n]*urgent_repair/);

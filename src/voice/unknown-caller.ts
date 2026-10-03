@@ -15,6 +15,7 @@ import { Output, gateway, generateText, type ModelMessage } from "ai";
 import { ReadableStream } from "node:stream/web";
 import { z } from "zod";
 
+import { AGENT_NAME } from "./call-opening";
 import { BrainPlaceholderLLM, takePendingUserText } from "./livekit-agent";
 
 /** Gateway model for the unknown-caller flow. */
@@ -23,7 +24,7 @@ const UNKNOWN_CALLER_MODEL = "anthropic/claude-haiku-4.5";
 /** Caller turns before the agent closes regardless of what it collected. */
 const MAX_CALLER_TURNS = 2;
 
-export const UNKNOWN_CALLER_GREETING = "Thanks for calling. I'm an AI assistant for the property manager. "
+export const UNKNOWN_CALLER_GREETING = `Thanks for calling. I'm ${AGENT_NAME}, an AI assistant for the property manager. `
     + "Can I get your name and the property you're calling about? Someone will call you back.";
 
 export const UNKNOWN_CALLER_ASK_AGAIN = "Sorry, could you tell me your name and the property you're calling about?";
