@@ -9,9 +9,9 @@ The judge plays the tenant. A second screen shows the Vercel dashboard.
 1. The landlord settings screen is already filled: a small installment cap, a short grace window, a fee-waiver cap of zero or a token amount. This is the UX beat.
 2. The call connects. The agent discloses that it is an AI and states a late balance.
 3. The judge asks for something outside policy (more installments, a waived fee, or a far-off date).
-4. The agent comes back with the plan the code allows, in a short respectful turn. That is the Claude beat, inside guardrails.
+4. The agent comes back with the plan the code allows, in a short respectful turn, and may add a perk the landlord wrote (“pay today and we’ll mow the lawn”). That is the Claude beat, inside guardrails.
 5. The judge agrees.
-6. The agent texts a Stripe Checkout link while the call is still up.
+6. The agent sends one Stripe Checkout link by Twilio text and by Resend email while the call is still up.
 7. The judge pays.
 8. The agent confirms the payment out loud, and the dashboard moves the call to paid.
 

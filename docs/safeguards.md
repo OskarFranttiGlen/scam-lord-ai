@@ -15,6 +15,11 @@ The landlord sets limits on the dashboard. The agent reads them as data. Enforce
 | Maximum installments | A plan with more splits is rejected. The counter-offer uses the maximum. |
 | Grace-period window | A promised date outside the window is rejected. The counter-offer uses the last allowed date. |
 | Fee-waiver cap | A waiver above the cap is rejected. The counter-offer uses the cap. A cap of zero means no waiver. |
+| Perks | The agent may offer one perk from the landlord’s list, and only when that perk’s condition is met. It cannot invent a new one. |
+
+A payment plan is a schedule: how many installments, the date and amount of each, any fee waiver, and at most one perk. Claude negotiates that schedule in conversation. `check_policy` accepts it or returns the nearest plan inside the settings.
+
+Perks are how the call can be light without giving away money the landlord did not allow. A landlord might write “We’ll mow the lawn this weekend if you pay the open balance today.” The agent can offer that, in a friendly line, once the tenant is actually agreeing to pay. “I’ll repaint the unit” is not on the list, so it is not offered.
 
 Claude may explain a counter-offer. It may not cross it. A tenant asking to pay nothing still hits the code path and gets the tightest plan the settings allow, or a handoff if a Jev check flags.
 

@@ -8,10 +8,10 @@ ScamLord AI sounds calm, brief, and respectful. It is collecting rent for a prop
 
 ## What Claude may do
 
-- Ask what date and amount the tenant can pay.
-- Offer a plan that policy code has already accepted.
+- Ask what date and amount the tenant can pay, and shape that into a plan: installment count, dates, amounts, and any waiver.
+- Offer a plan that policy code has already accepted, including one landlord perk when it fits. A perk sounds human (“pay today and we’ll mow the lawn this weekend”) and is copied from the landlord’s list.
 - Explain a counter-offer that policy code returned.
-- Send a Stripe link only after the tenant accepts an in-policy plan and no Jev flag is set.
+- Send the Stripe link by text and by email only after the tenant accepts an in-policy plan and no Jev flag is set.
 - Confirm a payment only after Stripe reports it.
 - Hand the call to a person when a check flags.
 
@@ -23,13 +23,14 @@ system_prompt = (
     "Your first sentence tells them you are an AI assistant for the property. "
     "\n"
     "AUTHORITY: "
-    "1. You cannot waive fees, extend dates, or split payments beyond the policy tool. "
-    "2. Before you offer or confirm any plan, call check_policy with the dates, amounts, and waiver you intend to say. "
-    "3. Say only the terms check_policy returns. "
-    "4. After each tenant turn, call check_signals. "
-    "5. If check_signals says handoff, stop negotiating. Tell them a person from the property will follow up. "
-    "6. Call send_payment_link only after they accept terms check_policy allowed and check_signals says continue. "
-    "7. Confirm a payment only when confirm_payment says it succeeded. "
+    "1. You cannot waive fees, extend dates, split payments, or promise favors beyond the policy tool. "
+    "2. Negotiate a payment plan: installments, dates, amounts, and at most one perk from the landlord list. "
+    "3. Before you offer or confirm any plan, call check_policy with that plan. "
+    "4. Say only the terms check_policy returns. Phrase a perk in a warm, plain sentence. "
+    "5. After each tenant turn, call check_signals. "
+    "6. If check_signals says handoff, stop negotiating. Tell them a person from the property will follow up. "
+    "7. Call send_payment_link only after they accept terms check_policy allowed and check_signals says continue. "
+    "8. Confirm a payment only when confirm_payment says it succeeded. "
     "\n"
     "SPEECH: "
     "- One or two spoken sentences per turn. "
@@ -41,9 +42,9 @@ system_prompt = (
 
 ### `check_policy`
 
-Input: proposed installments, first payment date, amount, and fee waiver.
+Input: proposed installments, each date and amount, any fee waiver, and an optional `perk_id`.
 
-The tool runs the landlord settings in code and returns a short string Claude can say: the accepted terms, or the counter-offer at the boundary of those settings.
+The tool runs the landlord settings in code. A perk is kept only if it belongs to this landlord and its condition matches the plan (for example, pay the open balance today). The tool returns a short string Claude can say: the accepted plan, or the counter-offer at the boundary of those settings.
 
 ### `check_signals`
 
@@ -55,7 +56,12 @@ Returns either `continue` or `handoff` plus the reason (`hardship`, `dispute`, `
 
 Input: `tenant_id`, `amount`.
 
-Sends an SMS with a Stripe Checkout link for that amount. Refuses when policy has not accepted the plan, when a handoff is active, or when the amount does not match the accepted plan.
+Creates one Stripe Checkout session for that amount. Sends the same link twice:
+
+- Twilio SMS to the tenancy phone
+- Resend email to the tenancy email
+
+If one address is missing, it sends the channel that exists and says so. The `payments` row stores the Stripe session id plus the Twilio and Resend ids. The tool refuses when policy has not accepted the plan, when a handoff is active, or when the amount does not match the accepted plan.
 
 ### `confirm_payment`
 

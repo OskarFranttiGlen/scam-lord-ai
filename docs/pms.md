@@ -8,10 +8,11 @@ The dashboard and the agents run on Vercel. LiveKit still carries the phone audi
 
 At the start of a call the agent gets one tenancy and that landlord’s policy. That is enough to speak:
 
-- Tenant name, mobile number, and language
+- Tenant name, mobile number, email, and language
 - Property name and unit
 - Monthly rent, open balance, late fee, and due date
 - Policy limits: maximum installments, grace-period days, fee-waiver cap
+- Perks the landlord is willing to throw in, such as mowing the lawn if the tenant pays
 - Any open payment plan
 - Whether a human handoff is already waiting
 
@@ -26,12 +27,13 @@ All of these live in Supabase Postgres. Row level security is on. The landlord�
 | `landlords` | Name, phone, link to `auth.users` | Signup |
 | `properties` | Name, address, `landlord_id` | Landlord |
 | `units` | Label, `property_id` | Landlord |
-| `tenancies` | Tenant name, phone, language, monthly rent, due day, `unit_id` | Landlord |
+| `tenancies` | Tenant name, phone, email, language, monthly rent, due day, `unit_id` | Landlord |
 | `charges` | Rent or late fee, amount, due date, status (`open`, `paid`, `waived`) | Landlord, or the Stripe webhook when a charge is paid |
 | `policies` | `max_installments`, `grace_days`, `fee_waiver_cap`, one row per landlord | Landlord settings screen |
+| `perks` | A landlord-written sweetener and when it applies. Example: “We’ll mow the lawn this weekend” if they pay the open balance today | Landlord |
 | `calls` | Tenancy, status, transcript, Jev probabilities, handoff reason | Voice agent |
-| `plans` | Accepted installments, dates, amounts, waiver, status, `call_id` | Policy code, after the tenant accepts |
-| `payments` | Amount, Stripe Checkout session id, status, `plan_id` | Stripe webhook |
+| `plans` | Installments, dates, amounts, waiver, chosen `perk_id`, status, `call_id` | Policy code, after the tenant accepts |
+| `payments` | Amount, Stripe Checkout session id, status, `plan_id`, Twilio message id, Resend email id | Agent creates the session and sends the link. The Stripe webhook marks it paid |
 
 Photos go in a private Storage bucket. The row on `calls` keeps the object path and the Gemini summary.
 
@@ -46,8 +48,8 @@ Two agents, both on the AI SDK, both through AI Gateway.
 - `load_tenancy` reads the Supabase rows above
 - `check_policy` runs the numeric limits in code
 - `check_signals` calls Jev
-- `save_plan` inserts a `plans` row after the tenant accepts
-- `send_payment_link` creates the Stripe session and the `payments` row
+- `save_plan` inserts a `plans` row, including any perk, after the tenant accepts
+- `send_payment_link` creates one Stripe Checkout session, texts it with Twilio, and emails it with Resend
 - `read_photo` asks Gemini and stores the summary
 
 The LiveKit worker sends the transcript in and speaks the agent’s text out. The worker does not decide terms.
@@ -65,6 +67,6 @@ Tools that wait on a person use `needsApproval`. The workflow suspends and the d
 2. The dashboard, or a scheduled job, starts a call with that `tenancy_id`.
 3. `ToolLoopAgent` loads the tenancy, charges, and policy from Supabase.
 4. LiveKit plays the disclosure and the balance from those rows.
-5. Negotiation, Jev, and the Stripe link run as tools on that agent.
+5. The agent negotiates a payment plan inside the policy limits and may attach one perk from `perks`. On acceptance it sends the same Stripe link by Twilio SMS and by Resend email.
 6. `WorkflowAgent` finishes the payment or the handoff if it lands after the spoken turn.
 7. The dashboard reads the same tables, so the landlord sees the plan and the payment as they happen.

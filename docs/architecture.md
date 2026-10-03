@@ -10,7 +10,7 @@ Supabase is the property system: tenancy, balance, policy, plan, payment, and ca
 | Policy code | Enforces landlord limits: maximum installment splits, grace-period window, fee-waiver cap. Accepts or counters a proposal with no model in the loop. |
 | Jev (`typesafe-ai/jev`) | System One decision model. On each turn it judges the transcript against constraints we wrote in advance and returns a typed decision with a probability. Low latency, so it fits the voice loop. Code acts on the decision. |
 | Gemini | Reads a photo the tenant sends (hardship letter, repair issue) and writes a short description into call state. |
-| Stripe | Checkout link by SMS mid-call. Payment confirmation returns to the agent before the call ends. |
+| Stripe | One Checkout link, sent mid-call by Twilio SMS and Resend email. Payment confirmation returns to the agent before the call ends. |
 | LiveKit | Audio in and out. Deepgram transcribes. ElevenLabs speaks. Forwards each turn to the `ToolLoopAgent` and speaks the reply. |
 | Vercel `WorkflowAgent` | Durable wait for the Stripe webhook and for a person to take a handoff. |
 | Vercel | Dashboard, both agents, and the AI Gateway path for Claude, Jev, and Gemini. |

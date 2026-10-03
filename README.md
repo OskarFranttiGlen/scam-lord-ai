@@ -12,7 +12,7 @@ The product leans on those strengths. Where a call needs judgment, Jev supplies 
 
 ## How a call works
 
-ScamLord AI is its own property system. Supabase stores the tenancy, the open balance, and the landlord’s limits. A Vercel `ToolLoopAgent` (Claude) negotiates from those rows. Jev is the System One model: the low-latency decision layer that judges each turn against constraints we define ahead of time. A Jev flag blocks the next concession and hands the call to a person. A Vercel `WorkflowAgent` waits on the Stripe payment or the human handoff when that outlasts the spoken turn. When the tenant agrees to a plan inside policy, the agent texts a Stripe link and confirms payment on the live call.
+ScamLord AI is its own property system. Supabase stores the tenancy, the open balance, and the landlord’s limits. A Vercel `ToolLoopAgent` (Claude) negotiates from those rows. Jev is the System One model: the low-latency decision layer that judges each turn against constraints we define ahead of time. A Jev flag blocks the next concession and hands the call to a person. A Vercel `WorkflowAgent` waits on the Stripe payment or the human handoff when that outlasts the spoken turn. When the tenant agrees to a plan inside policy, the agent sends one Stripe link by Twilio SMS and by Resend email, then confirms payment on the live call. A plan can include a perk the landlord already wrote, such as mowing the lawn if they pay.
 
 ```
 Supabase  tenancy, charges, policy, plan, payment, call
@@ -32,7 +32,7 @@ Landlord settings + live status ──► Vercel dashboard, same Supabase rows
 
 | Bet | What judges should see |
 | --- | --- |
-| Stripe (deepest) | A judge plays the tenant. The agent negotiates a plan, texts a Stripe link mid-call, the judge pays, and the agent confirms the payment live. |
+| Stripe (deepest) | A judge plays the tenant. The agent negotiates a plan, sends a Stripe link by text and email mid-call, the judge pays, and the agent confirms the payment live. |
 | Claude | The negotiation brain, working inside policy guardrails. |
 | Gemini | Reads photos tenants send, such as a hardship letter or a repair issue. |
 | Vercel | Hosts the dashboard and runs the agents: `ToolLoopAgent` on the call, `WorkflowAgent` for payment and handoff. Jev runs through AI Gateway. |
