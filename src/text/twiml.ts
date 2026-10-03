@@ -1,7 +1,8 @@
 /**
  * @module text/twiml
  *
- * TwiML for Twilio Messaging webhooks: one `<Message>` reply, or an empty `<Response/>`.
+ * TwiML for Twilio Messaging webhooks: one `<Message>` per reply text, or an empty `<Response/>`.
+ * Multiple `<Message>` elements make Twilio send multiple SMS texts.
  *
  * Depends on: (none)
  * Used by: /api/sms/inbound
@@ -22,13 +23,16 @@ function escapeXml(value: string): string {
 }
 
 /**
- * TwiML that replies with `reply`, or sends nothing when it is null or blank.
+ * TwiML that replies with each text in its own `<Message>`, or sends nothing when they are all
+ * null or blank.
  *
- * @param reply - SMS reply text
+ * @param reply - One reply text, several texts (e.g. words then a bare link), or `null` for none
  */
-export function buildMessagingTwiml(reply: string | null): string {
+export function buildMessagingTwiml(reply: string | readonly string[] | null): string {
+    const messages = (typeof reply === "string" ? [reply] : reply ?? [])
+        .map((message) => message.trim())
+        .filter((message) => message.length > 0)
+        .map((message) => `<Message>${escapeXml(message)}</Message>`);
     const head = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-    return reply?.trim()
-        ? `${head}<Response><Message>${escapeXml(reply.trim())}</Message></Response>`
-        : `${head}<Response/>`;
+    return messages.length > 0 ? `${head}<Response>${messages.join("")}</Response>` : `${head}<Response/>`;
 }

@@ -9,6 +9,18 @@ import { AgentView } from "../AgentView";
 vi.mock("@xyflow/react", () => ({
     ReactFlow: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
     Background: () => null,
+    Panel: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+    // FloorNav's viewport hooks (never invoked: useStore reports 0x0).
+    useReactFlow: () => ({
+        getViewport: () => ({ x: 0, y: 0, zoom: 1 }),
+        setCenter: () => undefined,
+        getZoom: () => 1,
+        getNodes: () => [],
+    }),
+    useStore: () => 0,
+    // StepNode's handles (never rendered: ReactFlow mock ignores nodeTypes).
+    Handle: () => null,
+    Position: { Top: "top", Right: "right", Bottom: "bottom", Left: "left" },
 }));
 
 vi.mock("@xyflow/react/dist/style.css", () => ({}));

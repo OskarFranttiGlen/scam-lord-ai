@@ -124,20 +124,20 @@ describe("check-in during a handoff", () => {
 
         const settings = collectionCallSettings(context(), state, { disclosed: true, channel: "voice" });
 
-        expect(settings.activeTools).toEqual(["record_feedback"]);
+        expect(settings.activeTools).toEqual(["record_feedback", "end_call"]);
         expect(settings.toolChoice).toBe("auto");
         expect(settings.instructions).toMatch(/record_feedback/);
     });
 
-    it("gives the handed-off agent no tools once the check-in is recorded", () => {
+    it("gives the handed-off agent only end_call once the check-in is recorded", () => {
         const state = createInitialCallState();
         state.handoffActive = true;
         state.feedbackRecorded = true;
 
         const settings = collectionCallSettings(context(), state, { disclosed: true, channel: "voice" });
 
-        expect(settings.activeTools).toEqual([]);
-        expect(settings.toolChoice).toBe("none");
+        expect(settings.activeTools).toEqual(["end_call"]);
+        expect(settings.toolChoice).toBe("auto");
     });
 });
 

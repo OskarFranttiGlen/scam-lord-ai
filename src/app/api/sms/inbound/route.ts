@@ -16,6 +16,7 @@ import { after } from "next/server";
 
 import { isValidTwilioSignature, resolveTwilioWebhookUrl } from "@/messaging/twilio-signature";
 import { handleInboundText } from "@/text/handle-inbound-text";
+import { splitLinkReply } from "@/text/split-link-reply";
 import { buildMessagingTwiml } from "@/text/twiml";
 
 export const runtime = "nodejs";
@@ -66,7 +67,9 @@ export async function POST(request: Request): Promise<Response> {
         after(() => background);
     }
 
-    return new Response(buildMessagingTwiml(result.reply), {
+    // A reply with a payment link goes out as two texts so each stays short enough for Twilio
+    // trial accounts (docs/SPEC.md, Text).
+    return new Response(buildMessagingTwiml(result.reply === null ? null : splitLinkReply(result.reply)), {
         status: 200,
         headers: { "content-type": "text/xml; charset=utf-8" },
     });

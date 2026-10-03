@@ -139,7 +139,7 @@ describe("check_policy on text", () => {
 
         expect(result).toMatchObject({
             status: "counter",
-            say: "The installments need to add up to $1,840. Suggested plan: $920 today and $920 on Mon Oct 12.",
+            say: "The installments need to add up to $1,840. I can do $920 today and $920 on Mon Oct 12. Does that work?",
         });
     });
 });

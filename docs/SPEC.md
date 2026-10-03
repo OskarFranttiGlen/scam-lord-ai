@@ -77,6 +77,8 @@ Follow-up notes: after each call, a model writes `calls.ai_notes`, a one- or two
 
 `create_office_task` opens a follow-up due tomorrow; code sets the date. Types: `payment_match`, `disputed_line`, `assistance_paperwork`, `tenant_portion`, `move_out_deposit`, `confirm_claim`, `urgent_repair`, `lease_change`, `tenancy_at_risk`, `missed_promises`. While a `payment_match` or `disputed_line` task is open, `accept_plan` refuses and no payment link goes out. The first six types also pause collection: the Stripe webhook does not start a new call on that invoice before `collection_paused_until`.
 
+**Follow-up calls:** A promised date that passes unpaid triggers one more call. An hourly cron (`/api/cron/follow-ups`, authenticated with `CRON_SECRET`) scans recent call notes; a tenancy is due when the latest notes promise a date that has passed and no call was created on or after the following day, so each missed promise gets one call. Runs happen only inside calling hours (Mon–Sat 9:00–19:59 in `CALLING_TIME_ZONE`, default Los Angeles) and re-run the webhook's safety checks: no call when the invoice is paid, rescheduled into a plan, already active, or paused by an office task.
+
 The scenario tables from the Oct 2026 playbook (Chuck Hattemer) are the design target.
 
 ## Text

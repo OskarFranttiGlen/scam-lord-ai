@@ -127,6 +127,8 @@ export type CallState = {
     stopCase?: TStopCase;
     /** Closing satisfaction score 1–5, from record_closing_feedback. */
     satisfactionScore?: number;
+    /** The agent called end_call; the worker hangs up once it finishes speaking. */
+    callEnded: boolean;
     officeTasks: TOfficeTask[];
 };
 
@@ -143,6 +145,7 @@ export function createInitialCallState(): CallState {
         maintenanceReports: [],
         urgentMaintenance: false,
         personRequestCount: 0,
+        callEnded: false,
         officeTasks: [],
     };
 }
@@ -198,6 +201,7 @@ export function normalizeCallState(value: unknown): CallState {
             ? raw.jevPlaybook
             : undefined,
         personRequestCount: typeof raw.personRequestCount === "number" ? raw.personRequestCount : 0,
+        callEnded: Boolean(raw.callEnded),
         stopCase: parseStopCase(raw.stopCase),
         satisfactionScore: typeof raw.satisfactionScore === "number" ? raw.satisfactionScore : undefined,
         officeTasks: Array.isArray(raw.officeTasks)

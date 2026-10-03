@@ -340,6 +340,8 @@ function buildCallOpeningRules(ctx: CallContext): string {
             + "do not log it.",
         "- Only a repair that is not in the history is new: call record_feedback with it, say it has been passed on, "
             + "then continue.",
+        "- When the conversation is finished (a plan is set up, a payment is confirmed, it is the wrong person, or "
+            + "they want to go), call end_call and say a short goodbye (under ten words) in the same reply.",
     ].join("\n");
 }
 
@@ -455,8 +457,8 @@ export function buildNegotiationInstructions(
             + "never compute it. If the tenant only names when part is paid (\"half next Friday\"), the rest is due "
             + "today unless they said otherwise.",
         "   When you call a tool, write no text in that step; speak only after you see its result.",
-        "3. Speak the check_policy result in your own words. If it countered, offer the counter and say plainly "
-            + "what is not possible (for example more payments than allowed, or a waiver above the cap).",
+        "3. The check_policy result is passed to the tenant as-is, so never repeat it. If they push back on a "
+            + "counter, say plainly what is not possible (for example more payments than allowed, or a waiver above the cap).",
         "4. When the tenant clearly agrees to a plan check_policy accepted, or commits to paying the full balance "
             + "today, call accept_plan right away with that exact plan (add the perk only for full payment today); "
             + `it re-checks policy itself, so do not call check_policy first. ${acceptEffect}`,
@@ -532,6 +534,12 @@ export function buildHandoffInstructions(
             : []),
         "- Never say what you cannot do (for example that you can't send payment links or discuss the balance); "
             + "say what happens next instead.",
+        ...(channel === "voice"
+            ? [
+                "- Once you have told them someone from the property will follow up and they have nothing else, "
+                    + "call end_call and say a short goodbye in the same reply.",
+            ]
+            : []),
     ].join("\n");
 }
 

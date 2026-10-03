@@ -48,7 +48,7 @@ import { fileURLToPath } from "node:url";
 import { createCollectionVoiceAgent } from "./agent";
 import { loadFollowUp, recordCallNotes } from "./call-notes";
 import { ChunkSentenceTokenizer } from "./chunk-tokenizer";
-import { createInitialCallState } from "./context";
+import { createInitialCallState, type CallState } from "./context";
 import {
     SIP_PHONE_NUMBER_ATTRIBUTE,
     detectInboundCaller,
@@ -188,6 +188,31 @@ async function waitForSipAnswer(ctx: JobContext): Promise<boolean> {
         };
         ctx.room.on(RoomEvent.ParticipantAttributesChanged, onAttributes);
         ctx.room.on(RoomEvent.ParticipantDisconnected, onLeft);
+    });
+}
+
+/**
+ * Ends the phone call from the agent's side once it says goodbye: after the end_call tool
+ * flags the state, wait for the agent to finish speaking (back to "listening"), then delete
+ * the room after the same closing delay the unknown-caller hangup uses.
+ *
+ * @param ctx - Job context for the call room
+ * @param session - Voice session running the collection agent
+ * @param callState - Call state; `callEnded` is set by the end_call tool
+ */
+function hangUpAfterGoodbye(ctx: JobContext, session: voice.AgentSession, callState: CallState): void {
+    const logger = log();
+    let hangingUp = false;
+    session.on(voice.AgentSessionEventTypes.AgentStateChanged, (ev) => {
+        if (!callState.callEnded || ev.newState !== "listening" || hangingUp) {
+            return;
+        }
+        hangingUp = true;
+        setTimeout(() => {
+            ctx.deleteRoom().catch((error: unknown) => {
+                logger.warn({ error }, "[voice/worker] could not hang up after goodbye");
+            });
+        }, UNKNOWN_CALLER_HANGUP_DELAY_MS);
     });
 }
 
@@ -349,6 +374,7 @@ async function answerCallback(ctx: JobContext, roomName: string, startedAt: Date
     });
     attachLatencyLog(session, agent);
     await session.start({ agent, room: ctx.room });
+    hangUpAfterGoodbye(ctx, session, callState);
     session.say(greeting);
 }
 
@@ -414,6 +440,7 @@ export default defineAgent({
         }
 
         await session.start({ agent, room: ctx.room });
+        hangUpAfterGoodbye(ctx, session, callState);
         session.say(greeting);
     },
 });

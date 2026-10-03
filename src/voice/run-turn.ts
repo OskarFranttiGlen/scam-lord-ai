@@ -94,7 +94,8 @@ async function evaluateTurnSignals(
 
 /**
  * Spoken `say` line from the final step's tool results, when the loop stopped on a tool
- * (e.g. accept_plan) instead of a text step.
+ * result that already carries its own reply (accept_plan, check_policy, confirm_payment,
+ * send_assistance_referral — see SPEAKABLE_TOOLS in agent.ts) instead of a text step.
  *
  * @param steps - Agent steps, in order
  */
