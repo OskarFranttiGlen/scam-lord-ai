@@ -14,7 +14,7 @@ Log in to the dashboard with the demo landlord account:
 
 The same account works locally (created by `./start-local-supabase.sh`) and on the deployed site.
 
-> **Calls only reach one phone number.** Twilio is on a trial account, which can only call and text verified numbers. The only verified number is Oskar's, set as `DEMO_TENANT_PHONE`. **Call now** on the dashboard and `scripts/call-tenant.ts` will fail for any other number until the Twilio account is upgraded or another number is verified.
+> **Calls only reach one phone number.** Twilio is on a trial account, which can only call and text verified numbers. The only verified number is Oskar's, `+61416827278`, set as `DEMO_TENANT_PHONE`. **Call now** on the dashboard and `scripts/call-tenant.ts` will fail for any other number until the Twilio account is upgraded or another number is verified.
 
 ## The problem
 
